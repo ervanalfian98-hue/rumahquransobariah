@@ -428,9 +428,31 @@ export default function LoginScreen() {
                                         </AnimatePresence>
                                     </div>
 
-                                    <button type="submit" className="w-full bg-[#4A1C14] text-[#FCF7E8] rounded-full py-4 text-center font-bold text-[15px] shadow-lg hover:bg-[#3A140E] active:scale-[0.98] transition-all mb-6 block border border-[#4A1C14]">
-                                        {isGoogleRegister ? 'Selesaikan Pendaftaran' : 'Register Sekarang'}
-                                    </button>
+                                    {isGoogleRegister ? (
+                                        <div className="flex gap-2 mb-6">
+                                            <button 
+                                                type="button" 
+                                                onClick={async () => {
+                                                    await supabase.auth.signOut();
+                                                    setIsGoogleRegister(false);
+                                                    setIsLogin(true);
+                                                }} 
+                                                className="w-1/3 bg-white text-[#4A1C14] border border-[#E8D2A6] rounded-full py-4 text-center font-bold text-[13px] shadow-sm hover:bg-[#FCF7E8] transition-all"
+                                            >
+                                                Batalkan
+                                            </button>
+                                            <button 
+                                                type="submit" 
+                                                className="w-2/3 bg-[#4A1C14] text-[#FCF7E8] rounded-full py-4 text-center font-bold text-[14px] shadow-lg hover:bg-[#3A140E] active:scale-[0.98] transition-all border border-[#4A1C14]"
+                                            >
+                                                Selesaikan
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button type="submit" className="w-full bg-[#4A1C14] text-[#FCF7E8] rounded-full py-4 text-center font-bold text-[15px] shadow-lg hover:bg-[#3A140E] active:scale-[0.98] transition-all mb-6 block border border-[#4A1C14]">
+                                            Register Sekarang
+                                        </button>
+                                    )}
                                 </form>
 
                                 {!isGoogleRegister && (
