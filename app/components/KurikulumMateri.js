@@ -138,7 +138,7 @@ const KurikulumMateri = ({ onBack }) => {
                         <form onSubmit={handleSave} className="space-y-4">
                             <div>
                                 <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Pilih Kelas</label>
-                                <select required value={classId} onChange={(e) => setClassId(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-semibold outline-none focus:border-[#B88A44]">
+                                <select required value={classId} onChange={(e) => setClassId(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-black font-semibold outline-none focus:border-[#B88A44]">
                                     <option value="" disabled>Pilih Kelas...</option>
                                     {CLASSES.map(c => (
                                         <option key={c.id} value={c.id}>{c.name}</option>
@@ -155,23 +155,23 @@ const KurikulumMateri = ({ onBack }) => {
 
                             <div>
                                 <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Tanggal</label>
-                                <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} min={todayStr} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-[#B88A44]" />
+                                <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} min={todayStr} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-black outline-none focus:border-[#B88A44]" />
                             </div>
 
                             <div className="flex gap-3">
                                 <div className="flex-1">
                                     <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Jam Masuk</label>
-                                    <input required type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-[#B88A44]" />
+                                    <input required type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-black outline-none focus:border-[#B88A44]" />
                                 </div>
                                 <div className="flex-1">
                                     <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Jam Selesai</label>
-                                    <input required type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-[#B88A44]" />
+                                    <input required type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-black outline-none focus:border-[#B88A44]" />
                                 </div>
                             </div>
 
                             <div>
                                 <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Materi Yang Dipelajari</label>
-                                <textarea required value={materi} onChange={(e) => setMateri(e.target.value)} rows="3" placeholder="Deskripsikan materi..." className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-[#B88A44] resize-none"></textarea>
+                                <textarea required value={materi} onChange={(e) => setMateri(e.target.value)} rows="3" placeholder="Deskripsikan materi..." className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-black outline-none focus:border-[#B88A44] resize-none"></textarea>
                             </div>
 
                             <button type="submit" className="w-full bg-[#4A1C14] text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-[#3A140E] transition-colors">

@@ -167,11 +167,12 @@ const KelolaPengajar = ({ onBack }) => {
                                             <h4 className="font-bold text-[#4A1C14] text-sm">
                                                 {p.gender === 'ustadz' ? 'Ustadz ' : 'Ustadzah '}{p.name}
                                             </h4>
-                                            <p className="text-[10px] text-[#4A1C14]/60 bg-[#FCF7E8] px-2 py-0.5 rounded-md inline-block mt-1">
+                                            <div className="flex items-center gap-1 mt-1 mb-1.5 text-[10px] font-bold text-gray-600 bg-gray-50 px-2 py-0.5 rounded max-w-fit border border-gray-200">
+                                                <PhosphorIcon icon="user-circle" />
+                                                <span className="truncate">{managementUsers.find(u => u.id === p.userId)?.nama || 'Belum dihubungkan'}</span>
+                                            </div>
+                                            <p className="text-[10px] text-[#4A1C14]/60 bg-[#FCF7E8] px-2 py-0.5 rounded-md inline-block">
                                                 {p.classes.length} Kelas Diajar
-                                            </p>
-                                            <p className="text-[9px] text-gray-400 mt-1">
-                                                Akun: {managementUsers.find(u => u.id === p.userId)?.nama || 'Belum dihubungkan'}
                                             </p>
                                         </div>
                                     </div>

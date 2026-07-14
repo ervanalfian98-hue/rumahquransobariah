@@ -201,46 +201,8 @@ const Kepengurusan = ({ setActiveTab }) => {
                 </div>
             ) : (
                 <>
-                    <div className="px-5 mt-4">
-                        <button 
-                            onClick={() => setIsFormOpen(true)}
-                            className="w-full bg-indigo-50 border border-indigo-200 text-indigo-700 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-indigo-100 transition"
-                        >
-                            <PhosphorIcon icon="plus-circle" size={20} />
-                            Tambah Pengurus Baru
-                        </button>
-                    </div>
-
-                    {/* Daftar Anggota Belum Ditempatkan */}
-                    <div className="px-5 mt-6">
-                        <h3 className="font-bold text-[#4A1C14] mb-3 text-sm border-b pb-2 flex items-center justify-between">
-                            <span>Anggota Management</span>
-                            <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full">{anggotaList.length} Orang</span>
-                        </h3>
-                        {anggotaList.length === 0 ? (
-                            <div className="text-center p-4 border border-dashed border-gray-300 rounded-xl bg-white">
-                                <p className="text-xs text-gray-500">Semua anggota management sudah ditempatkan.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 gap-3">
-                                {anggotaList.map(u => (
-                                    <div key={u.id} className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-bold">
-                                            {u.nama.charAt(0)}
-                                        </div>
-                                        <div className="flex-1 overflow-hidden">
-                                            <h4 className="font-bold text-gray-800 text-sm truncate">{u.nama}</h4>
-                                            <p className="text-[10px] text-gray-500 truncate">{u.email} | {u.phone}</p>
-                                            <p className="text-[9px] text-indigo-500 mt-0.5">Menunggu penempatan posisi...</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
                     {/* Pimpinan / Pembina */}
-                    <div className="px-5 mt-8">
+                    <div className="px-5 mt-6">
                         <h3 className="font-bold text-[#4A1C14] mb-3 text-sm text-center">Dewan Pembina & Pimpinan</h3>
                         {pimpinanList.length === 0 ? (
                             <div className="text-center p-4 border border-dashed border-gray-300 rounded-xl">
@@ -306,6 +268,34 @@ const Kepengurusan = ({ setActiveTab }) => {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Daftar Anggota Belum Ditempatkan */}
+                    <div className="px-5 mt-8 mb-8">
+                        <h3 className="font-bold text-[#4A1C14] mb-3 text-sm border-b pb-2 flex items-center justify-between">
+                            <span>Anggota Management</span>
+                            <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full">{anggotaList.length} Orang</span>
+                        </h3>
+                        {anggotaList.length === 0 ? (
+                            <div className="text-center p-4 border border-dashed border-gray-300 rounded-xl bg-white">
+                                <p className="text-xs text-gray-500">Semua anggota management sudah ditempatkan.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3">
+                                {anggotaList.map(u => (
+                                    <div key={u.id} className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-bold">
+                                            {u.nama.charAt(0)}
+                                        </div>
+                                        <div className="flex-1 overflow-hidden">
+                                            <h4 className="font-bold text-gray-800 text-sm truncate">{u.nama}</h4>
+                                            <p className="text-[10px] text-gray-500 truncate">{u.email} | {u.phone}</p>
+                                            <p className="text-[9px] text-indigo-500 mt-0.5">Menunggu penempatan posisi...</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
