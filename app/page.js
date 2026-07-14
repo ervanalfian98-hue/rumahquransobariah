@@ -7,7 +7,7 @@ import { supabase } from './lib/supabaseClient';
 
 // Helper component for Phosphor Icons
 const PhosphorIcon = ({ icon, size = 24, weight = "regular", className = "" }) => {
-    const weightClass = weight === 'regular' ? `ph-${icon}` : `ph-${weight} ph-${icon}`;
+    const weightClass = weight === 'regular' ? `ph ph-${icon}` : `ph-${weight} ph-${icon}`;
     return <i className={`${weightClass} ${className}`} style={{ fontSize: size }}></i>;
 };
 
@@ -16,6 +16,7 @@ export default function LoginScreen() {
     const [isLogin, setIsLogin] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [showKodeAkses, setShowKodeAkses] = useState(false);
     const [registerType, setRegisterType] = useState('tholibah'); // 'tholibah' | 'management'
     
     // Auth States
@@ -99,9 +100,9 @@ export default function LoginScreen() {
             }
         }
         
-        // Kode acak untuk management: RQS123
-        if (registerType === 'management' && formData.kodeAkses !== 'RQS123') {
-            return alert("Kode akses khusus management salah! (Clue: RQS123)");
+        // Kode acak untuk management: 34t8wJOd
+        if (registerType === 'management' && formData.kodeAkses !== '34t8wJOd') {
+            return alert("Kode akses khusus management salah!");
         }
         
         const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
@@ -275,7 +276,7 @@ export default function LoginScreen() {
                                 <form onSubmit={handleLoginSubmit}>
                                     <div className="space-y-4 mb-3">
                                         <div className="relative flex items-center">
-                                            <PhosphorIcon icon="envelope-simple" size={20} className="absolute left-5 text-[#B88A44]/70" />
+                                            <PhosphorIcon icon="envelope-simple" size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70" />
                                             <input 
                                                 required
                                                 type="text" 
@@ -287,7 +288,7 @@ export default function LoginScreen() {
                                         </div>
 
                                         <div className="relative flex items-center">
-                                            <PhosphorIcon icon="lock-key" size={20} className="absolute left-5 text-[#B88A44]/70" />
+                                            <PhosphorIcon icon="lock-key" size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70 z-10" />
                                             <input 
                                                 required
                                                 type={showPassword ? "text" : "password"} 
@@ -299,7 +300,7 @@ export default function LoginScreen() {
                                             <button 
                                                 type="button"
                                                 onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-5 p-1 text-[#B88A44] hover:text-[#4A1C14] transition-colors"
+                                                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-[#B88A44] hover:text-[#4A1C14] transition-colors z-10"
                                             >
                                                 <PhosphorIcon icon={showPassword ? "eye" : "eye-slash"} size={20} />
                                             </button>
@@ -365,27 +366,27 @@ export default function LoginScreen() {
 
                                         {/* Common Inputs */}
                                         <div className="relative flex items-center">
-                                            <PhosphorIcon icon="user" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                            <PhosphorIcon icon="user" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70" />
                                             <input required type="text" placeholder="Nama Lengkap" value={formData.nama} onChange={e => setFormData({...formData, nama: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-4 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all placeholder:text-[#4A1C14]/40" />
                                         </div>
 
                                         <div className="relative flex items-center">
-                                            <PhosphorIcon icon="map-pin" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                            <PhosphorIcon icon="map-pin" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70" />
                                             <input required type="text" placeholder="Tempat Lahir" value={formData.tempatLahir} onChange={e => setFormData({...formData, tempatLahir: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-4 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all placeholder:text-[#4A1C14]/40" />
                                         </div>
 
                                         <div className="relative flex items-center">
-                                            <PhosphorIcon icon="calendar-blank" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                            <PhosphorIcon icon="calendar-blank" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70" />
                                             <input required type="date" value={formData.tanggalLahir} onChange={e => setFormData({...formData, tanggalLahir: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-4 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all text-[#4A1C14]/70 uppercase" />
                                         </div>
 
                                         <div className="relative flex items-center">
-                                            <PhosphorIcon icon="at" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                            <PhosphorIcon icon="at" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70" />
                                             <input required type="text" placeholder="Username" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-4 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all placeholder:text-[#4A1C14]/40" />
                                         </div>
 
                                         <div className="relative flex items-center">
-                                            <PhosphorIcon icon="phone" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                            <PhosphorIcon icon="phone" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70" />
                                             <input required type="tel" placeholder="Nomor HP" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-4 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all placeholder:text-[#4A1C14]/40" />
                                         </div>
 
@@ -393,20 +394,20 @@ export default function LoginScreen() {
                                         {!isGoogleRegister && (
                                             <>
                                                 <div className="relative flex items-center">
-                                                    <PhosphorIcon icon="envelope-simple" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                                    <PhosphorIcon icon="envelope-simple" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70" />
                                                     <input required type="email" placeholder="Email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-4 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all placeholder:text-[#4A1C14]/40" />
                                                 </div>
                                                 <div className="relative flex items-center">
-                                                    <PhosphorIcon icon="lock-key" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                                    <PhosphorIcon icon="lock-key" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70 z-10" />
                                                     <input required type={showPassword ? "text" : "password"} placeholder="Password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-12 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all placeholder:text-[#4A1C14]/40" />
-                                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 p-1 text-[#B88A44] hover:text-[#4A1C14] transition-colors">
+                                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-[#B88A44] hover:text-[#4A1C14] transition-colors z-10">
                                                         <PhosphorIcon icon={showPassword ? "eye" : "eye-slash"} size={18} />
                                                     </button>
                                                 </div>
                                                 <div className="relative flex items-center">
-                                                    <PhosphorIcon icon="lock-key" size={18} className="absolute left-5 text-[#B88A44]/70" />
+                                                    <PhosphorIcon icon="lock-key" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#B88A44]/70 z-10" />
                                                     <input required type={showConfirmPassword ? "text" : "password"} placeholder="Konfirmasi Password" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} className="w-full bg-[#FCF7E8] border border-[#E8D2A6]/50 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-12 text-[13px] font-medium focus:outline-none focus:border-[#B88A44] focus:ring-1 focus:ring-[#B88A44]/20 transition-all placeholder:text-[#4A1C14]/40" />
-                                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-5 p-1 text-[#B88A44] hover:text-[#4A1C14] transition-colors">
+                                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-[#B88A44] hover:text-[#4A1C14] transition-colors z-10">
                                                         <PhosphorIcon icon={showConfirmPassword ? "eye" : "eye-slash"} size={18} />
                                                     </button>
                                                 </div>
@@ -421,8 +422,11 @@ export default function LoginScreen() {
                                                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                                                     className="relative flex items-center overflow-hidden"
                                                 >
-                                                    <PhosphorIcon icon="key" size={18} className="absolute left-5 text-rose-500/80" />
-                                                    <input required type="text" placeholder="Kode Akses (RQS123)" value={formData.kodeAkses} onChange={e => setFormData({...formData, kodeAkses: e.target.value})} className="w-full bg-rose-50 border border-rose-200 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-4 text-[13px] font-medium focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 transition-all placeholder:text-rose-800/50" />
+                                                    <PhosphorIcon icon="key" size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-rose-500/80 z-10" />
+                                                    <input required type={showKodeAkses ? "text" : "password"} placeholder="Kode Akses Rahasia" value={formData.kodeAkses} onChange={e => setFormData({...formData, kodeAkses: e.target.value})} className="w-full bg-rose-50 border border-rose-200 text-[#4A1C14] rounded-full py-3.5 pl-14 pr-12 text-[13px] font-medium focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 transition-all placeholder:text-rose-800/50" />
+                                                    <button type="button" onClick={() => setShowKodeAkses(!showKodeAkses)} className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-rose-500/80 hover:text-rose-700 transition-colors z-10">
+                                                        <PhosphorIcon icon={showKodeAkses ? "eye" : "eye-slash"} size={18} />
+                                                    </button>
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>

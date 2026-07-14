@@ -70,7 +70,13 @@ const KurikulumMateri = ({ onBack }) => {
 
     // Separate active and history
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const getLocalDateString = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    const todayStr = getLocalDateString(now);
     const currentTimeStr = now.toTimeString().substring(0, 5); // "HH:MM"
 
     const isPast = (sch) => {

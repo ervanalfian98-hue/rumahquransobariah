@@ -76,11 +76,11 @@ const KelolaSosmed = ({ onBack }) => {
                         <div className="space-y-3">
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Username</label>
-                                <input required type="text" value={config.instagram.username} onChange={e => handleChange('instagram', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-pink-400" placeholder="@username" />
+                                <input required type="text" value={config.instagram.username} onChange={e => handleChange('instagram', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-pink-400" placeholder="@username" />
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Link URL</label>
-                                <input required type="url" value={config.instagram.url} onChange={e => handleChange('instagram', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-pink-400" placeholder="https://instagram.com/..." />
+                                <input required type="url" value={config.instagram.url} onChange={e => handleChange('instagram', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-pink-400" placeholder="https://instagram.com/..." />
                             </div>
                         </div>
                     </div>
@@ -94,11 +94,11 @@ const KelolaSosmed = ({ onBack }) => {
                         <div className="space-y-3">
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Nama Channel</label>
-                                <input required type="text" value={config.youtube.username} onChange={e => handleChange('youtube', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-red-400" placeholder="Nama Channel" />
+                                <input required type="text" value={config.youtube.username} onChange={e => handleChange('youtube', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-red-400" placeholder="Nama Channel" />
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Link URL</label>
-                                <input required type="url" value={config.youtube.url} onChange={e => handleChange('youtube', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-red-400" placeholder="https://youtube.com/..." />
+                                <input required type="url" value={config.youtube.url} onChange={e => handleChange('youtube', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-red-400" placeholder="https://youtube.com/..." />
                             </div>
                         </div>
                     </div>
@@ -112,11 +112,11 @@ const KelolaSosmed = ({ onBack }) => {
                         <div className="space-y-3">
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Nama Halaman/Username</label>
-                                <input required type="text" value={config.facebook.username} onChange={e => handleChange('facebook', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-400" placeholder="Nama Halaman" />
+                                <input required type="text" value={config.facebook.username} onChange={e => handleChange('facebook', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-blue-400" placeholder="Nama Halaman" />
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Link URL</label>
-                                <input required type="url" value={config.facebook.url} onChange={e => handleChange('facebook', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-400" placeholder="https://facebook.com/..." />
+                                <input required type="url" value={config.facebook.url} onChange={e => handleChange('facebook', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-blue-400" placeholder="https://facebook.com/..." />
                             </div>
                         </div>
                     </div>
@@ -130,11 +130,11 @@ const KelolaSosmed = ({ onBack }) => {
                         <div className="space-y-3">
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Username</label>
-                                <input required type="text" value={config.tiktok.username} onChange={e => handleChange('tiktok', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-gray-500" placeholder="@username" />
+                                <input required type="text" value={config.tiktok.username} onChange={e => handleChange('tiktok', 'username', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-gray-500" placeholder="@username" />
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Link URL</label>
-                                <input required type="url" value={config.tiktok.url} onChange={e => handleChange('tiktok', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-gray-500" placeholder="https://tiktok.com/..." />
+                                <input required type="url" value={config.tiktok.url} onChange={e => handleChange('tiktok', 'url', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-gray-500" placeholder="https://tiktok.com/..." />
                             </div>
                         </div>
                     </div>

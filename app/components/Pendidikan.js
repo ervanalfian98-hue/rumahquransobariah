@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES } from './MockData';
 
+const getLocalDateString = (dateObj = new Date()) => {
+    return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+};
+
 const PendidikanScreen = ({ currentUser }) => {
     const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
     const [pengajarList, setPengajarList] = useState([]);
@@ -40,7 +44,7 @@ const PendidikanScreen = ({ currentUser }) => {
             const savedSchedules = localStorage.getItem('rqs_jadwal_kelas');
             if (savedSchedules) setSchedules(JSON.parse(savedSchedules));
 
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             const savedAbsen = localStorage.getItem(`rqs_absen_${today}`);
             if (savedAbsen) {
                 setAbsenRecord(JSON.parse(savedAbsen));
@@ -64,22 +68,29 @@ const PendidikanScreen = ({ currentUser }) => {
     };
 
     const getActiveSchedule = (clsId) => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateString();
+        const now = new Date();
+        const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
         const classSchedules = schedules.filter(s => s.classId === clsId);
         if (classSchedules.length === 0) return null;
         
-        let active = classSchedules.find(s => s.date === todayStr);
-        if (!active) {
-            const upcoming = classSchedules.filter(s => s.date > todayStr).sort((a,b) => a.date.localeCompare(b.date));
-            if (upcoming.length > 0) active = upcoming[0];
-        }
-        return active;
+        let active = classSchedules.find(s => {
+            if (s.date === todayStr) {
+                const endParts = s.endTime.split(':');
+                const endMin = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+                return currentTotalMinutes < endMin;
+            }
+            return false;
+        });
+
+        return active || null;
     };
 
     useEffect(() => {
         const updateProgress = () => {
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+            const todayStr = getLocalDateString(now);
             const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
 
             let currentAbsen = null;
@@ -92,14 +103,15 @@ const PendidikanScreen = ({ currentUser }) => {
             const newProgressMap = {};
 
             CLASSES.forEach(cls => {
-                const schedule = getActiveSchedule(cls.id);
+                // Find today's schedule explicitly for attendance clearing logic
+                const todaySchedule = schedules.find(s => s.classId === cls.id && s.date === todayStr);
                 
-                if (schedule && schedule.date === todayStr) {
-                    const endParts = schedule.endTime.split(':');
+                if (todaySchedule) {
+                    const endParts = todaySchedule.endTime.split(':');
                     const endMin = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
 
                     if (currentTotalMinutes >= endMin) {
-                        newProgressMap[cls.id] = 100;
+                        newProgressMap[cls.id] = 0; // Class ended, reset to 0
                         // Class has ended, clear attendance for this class
                         if (currentAbsen) {
                             Object.keys(currentAbsen).forEach(userId => {
@@ -139,7 +151,22 @@ const PendidikanScreen = ({ currentUser }) => {
             if (absenChanged && currentAbsen) {
                 setAbsenRecord(currentAbsen);
                 localStorage.setItem(`rqs_absen_${todayStr}`, JSON.stringify(currentAbsen));
+            } else {
+                // Sync absenRecord state with today's localStorage to handle midnight rollover efficiently
+                setAbsenRecord(prev => {
+                    const next = currentAbsen || {};
+                    return JSON.stringify(prev) !== JSON.stringify(next) ? next : prev;
+                });
             }
+
+            // Sync teacherPresentRecord state with today's localStorage efficiently
+            try {
+                const savedTeacher = localStorage.getItem(`rqs_teacher_present_${todayStr}`);
+                const parsedTeacher = savedTeacher ? JSON.parse(savedTeacher) : {};
+                setTeacherPresentRecord(prev => {
+                    return JSON.stringify(prev) !== JSON.stringify(parsedTeacher) ? parsedTeacher : prev;
+                });
+            } catch(e) {}
         };
 
         updateProgress();
@@ -158,7 +185,7 @@ const PendidikanScreen = ({ currentUser }) => {
             return;
         }
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const activeSchedule = getActiveSchedule(selectedClass.id);
         
         if (!activeSchedule || activeSchedule.date !== today) {
@@ -179,7 +206,7 @@ const PendidikanScreen = ({ currentUser }) => {
     };
 
     const handleAbsenSubmit = () => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const existing = absenRecord[currentUser?.id] || [];
         const newArr = Array.isArray(existing) ? existing : [];
         if (!newArr.includes(selectedClass.id)) newArr.push(selectedClass.id);
@@ -193,7 +220,7 @@ const PendidikanScreen = ({ currentUser }) => {
     };
 
     const handleManagementAbsen = () => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const existing = absenRecord[currentUser?.id] || [];
         const newArr = Array.isArray(existing) ? existing : [];
         if (!newArr.includes(selectedClass.id)) newArr.push(selectedClass.id);
@@ -205,7 +232,7 @@ const PendidikanScreen = ({ currentUser }) => {
     };
 
     const handleTeacherPresent = () => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const currentTime = new Date().toTimeString().substring(0, 5);
         const newRecord = { ...teacherPresentRecord, [selectedClass.id]: currentTime };
         setTeacherPresentRecord(newRecord);
@@ -214,7 +241,7 @@ const PendidikanScreen = ({ currentUser }) => {
 
     const handleKickStudent = (studentId) => {
         if (!window.confirm("Keluarkan tholibah ini dari daftar hadir?")) return;
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const existing = absenRecord[studentId] || [];
         const newArr = Array.isArray(existing) ? existing.filter(id => id !== selectedClass.id) : [];
         const newAbsen = { ...absenRecord, [studentId]: newArr };
@@ -366,7 +393,7 @@ const PendidikanScreen = ({ currentUser }) => {
     if (inClassView) return renderClassDetail();
 
     const activeSchedule = getActiveSchedule(selectedClass.id);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const currentProgress = progressMap[selectedClass.id] || 0;
 
     return (
