@@ -35,6 +35,8 @@ import MerchandiseScreen from '../components/Merchandise';
 import RqsBerdayaScreen from '../components/RqsBerdaya';
 import RqsHerbalScreen from '../components/RqsHerbal';
 import RqsMlpScreen from '../components/RqsMlp';
+import PengaturanProfil from '../components/PengaturanProfil';
+import RiwayatAbsensi from '../components/RiwayatAbsensi';
 
 export default function App() {
     const [activeTab, setActiveTab] = useState('beranda');
@@ -220,6 +222,8 @@ export default function App() {
                 : activeTab === 'qurban' ? <QurbanScreen setActiveTab={handleTabChange} />
                 : activeTab === 'donasi' ? <DonasiScreen setActiveTab={handleTabChange} />
                 : activeTab === 'sosmed' ? <SosmedScreen setActiveTab={handleTabChange} />
+                : activeTab === 'pengaturan-profil' ? <PengaturanProfil setActiveTab={handleTabChange} currentUser={currentUser} />
+                : activeTab === 'riwayat-absensi' ? <RiwayatAbsensi setActiveTab={handleTabChange} currentUser={currentUser} />
                 : null}
             </>
         );

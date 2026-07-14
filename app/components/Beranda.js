@@ -220,7 +220,7 @@ const BerandaScreen = ({ setActiveTab, currentUser }) => {
 
     return (
         <div className="pb-24 animate-in fade-in duration-500 bg-[#FDFBF7]">
-            <Navbar notifications={notifications} currentUser={currentUser} />
+            <Navbar setActiveTab={setActiveTab} notifications={notifications} currentUser={currentUser} />
 
             <JadwalSholat setActiveTab={setActiveTab} />
 

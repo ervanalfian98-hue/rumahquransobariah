@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { supabase } from '../lib/supabaseClient';
 
-const Navbar = ({ notifications = [], currentUser }) => {
+const Navbar = ({ notifications = [], currentUser, setActiveTab }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
 
@@ -77,10 +77,10 @@ const Navbar = ({ notifications = [], currentUser }) => {
                                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                 className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-[#E8D2A6]/50 py-2 z-50 origin-top-right"
                             >
-                                <button className="w-full text-left px-4 py-2 text-sm text-[#4A1C14] hover:bg-[#FCF7E8] flex items-center gap-3 transition-colors">
+                                <button onClick={() => { setActiveTab('pengaturan-profil'); setIsProfileOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-[#4A1C14] hover:bg-[#FCF7E8] flex items-center gap-3 transition-colors">
                                     <PhosphorIcon icon="gear" size={18} className="text-[#B88A44]" /> Pengaturan Profil
                                 </button>
-                                <button className="w-full text-left px-4 py-2 text-sm text-[#4A1C14] hover:bg-[#FCF7E8] flex items-center gap-3 transition-colors">
+                                <button onClick={() => { setActiveTab('riwayat-absensi'); setIsProfileOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-[#4A1C14] hover:bg-[#FCF7E8] flex items-center gap-3 transition-colors">
                                     <PhosphorIcon icon="clock" size={18} className="text-[#B88A44]" /> Riwayat Absensi
                                 </button>
                                 <div className="h-px bg-slate-100 my-1"></div>

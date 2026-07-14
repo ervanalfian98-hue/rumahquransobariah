@@ -82,36 +82,64 @@ const PendidikanScreen = ({ currentUser }) => {
             const todayStr = now.toISOString().split('T')[0];
             const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
 
+            let currentAbsen = null;
+            let absenChanged = false;
+            try {
+                const saved = localStorage.getItem(`rqs_absen_${todayStr}`);
+                if (saved) currentAbsen = JSON.parse(saved);
+            } catch(e) {}
+
             const newProgressMap = {};
 
             CLASSES.forEach(cls => {
                 const schedule = getActiveSchedule(cls.id);
-                const teacherArrivedStr = teacherPresentRecord[cls.id];
                 
-                if (schedule && schedule.date === todayStr && teacherArrivedStr) {
-                    const startParts = teacherArrivedStr.split(':');
-                    const startMin = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
-                    
+                if (schedule && schedule.date === todayStr) {
                     const endParts = schedule.endTime.split(':');
                     const endMin = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
 
                     if (currentTotalMinutes >= endMin) {
                         newProgressMap[cls.id] = 100;
-                    } else if (currentTotalMinutes <= startMin) {
-                        newProgressMap[cls.id] = 1;
+                        // Class has ended, clear attendance for this class
+                        if (currentAbsen) {
+                            Object.keys(currentAbsen).forEach(userId => {
+                                const userAbsen = currentAbsen[userId];
+                                if (Array.isArray(userAbsen) && userAbsen.includes(cls.id)) {
+                                    currentAbsen[userId] = userAbsen.filter(id => id !== cls.id);
+                                    absenChanged = true;
+                                }
+                            });
+                        }
                     } else {
-                        const totalDuration = endMin - startMin;
-                        const elapsed = currentTotalMinutes - startMin;
-                        let perc = Math.floor((elapsed / totalDuration) * 100);
-                        if (perc < 1) perc = 1;
-                        if (perc > 100) perc = 100;
-                        newProgressMap[cls.id] = perc;
+                        const teacherArrivedStr = teacherPresentRecord[cls.id];
+                        if (teacherArrivedStr) {
+                            const startParts = teacherArrivedStr.split(':');
+                            const startMin = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+                            
+                            if (currentTotalMinutes <= startMin) {
+                                newProgressMap[cls.id] = 1;
+                            } else {
+                                const totalDuration = endMin - startMin;
+                                const elapsed = currentTotalMinutes - startMin;
+                                let perc = Math.floor((elapsed / totalDuration) * 100);
+                                if (perc < 1) perc = 1;
+                                if (perc > 100) perc = 100;
+                                newProgressMap[cls.id] = perc;
+                            }
+                        } else {
+                            newProgressMap[cls.id] = 0;
+                        }
                     }
                 } else {
                     newProgressMap[cls.id] = 0;
                 }
             });
             setProgressMap(newProgressMap);
+            
+            if (absenChanged && currentAbsen) {
+                setAbsenRecord(currentAbsen);
+                localStorage.setItem(`rqs_absen_${todayStr}`, JSON.stringify(currentAbsen));
+            }
         };
 
         updateProgress();
@@ -131,6 +159,13 @@ const PendidikanScreen = ({ currentUser }) => {
         }
 
         const today = new Date().toISOString().split('T')[0];
+        const activeSchedule = getActiveSchedule(selectedClass.id);
+        
+        if (!activeSchedule || activeSchedule.date !== today) {
+            alert("Tidak ada jadwal kelas hari ini. Silakan periksa kembali nanti atau hubungi pengajar.");
+            return;
+        }
+
         const currentAbsen = JSON.parse(localStorage.getItem(`rqs_absen_${today}`) || '{}');
         const existing = currentAbsen[currentUser?.id];
         const hasAbsened = Array.isArray(existing) ? existing.includes(selectedClass.id) : !!existing;
@@ -175,6 +210,17 @@ const PendidikanScreen = ({ currentUser }) => {
         const newRecord = { ...teacherPresentRecord, [selectedClass.id]: currentTime };
         setTeacherPresentRecord(newRecord);
         localStorage.setItem(`rqs_teacher_present_${today}`, JSON.stringify(newRecord));
+    };
+
+    const handleKickStudent = (studentId) => {
+        if (!window.confirm("Keluarkan tholibah ini dari daftar hadir?")) return;
+        const today = new Date().toISOString().split('T')[0];
+        const existing = absenRecord[studentId] || [];
+        const newArr = Array.isArray(existing) ? existing.filter(id => id !== selectedClass.id) : [];
+        const newAbsen = { ...absenRecord, [studentId]: newArr };
+        
+        setAbsenRecord(newAbsen);
+        localStorage.setItem(`rqs_absen_${today}`, JSON.stringify(newAbsen));
     };
 
     const renderClassDetail = () => {
@@ -291,8 +337,15 @@ const PendidikanScreen = ({ currentUser }) => {
                                         </div>
                                         <div>
                                             {isPresent ? (
-                                                <div className="bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 border border-emerald-100 shadow-sm">
-                                                    <PhosphorIcon icon="check-circle" size={14} weight="fill" /> Hadir
+                                                <div className="flex items-center gap-2">
+                                                    <div className="bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 border border-emerald-100 shadow-sm">
+                                                        <PhosphorIcon icon="check-circle" size={14} weight="fill" /> Hadir
+                                                    </div>
+                                                    {currentUser?.role === 'management' && student.id !== currentUser?.id && (
+                                                        <button onClick={() => handleKickStudent(student.id)} title="Keluarkan dari daftar hadir" className="bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1.5 rounded-lg border border-red-200 transition-colors">
+                                                            <PhosphorIcon icon="x-circle" size={14} weight="fill" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="bg-gray-50 text-gray-400 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 border border-gray-200">

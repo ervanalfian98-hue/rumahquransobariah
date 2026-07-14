@@ -4,12 +4,14 @@ import PhosphorIcon from './PhosphorIcon';
 
 const KelolaKepengurusan = ({ onBack }) => {
     const [pengurusList, setPengurusList] = useState([]);
+    const [managementUsers, setManagementUsers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     // Form state
     const [editingId, setEditingId] = useState(null);
     const [type, setType] = useState('pimpinan'); // pimpinan, divisi
     const [namaLengkap, setNamaLengkap] = useState('');
+    const [userId, setUserId] = useState('');
     const [peran, setPeran] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
     const [icon, setIcon] = useState('user'); // For divisi
@@ -17,6 +19,11 @@ const KelolaKepengurusan = ({ onBack }) => {
     const ICON_OPTIONS = ['user', 'users', 'books', 'megaphone', 'chart-bar', 'heart', 'shield-check'];
 
     const loadPengurus = () => {
+        // Load all users to find management
+        const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        const mngUsers = allUsers.filter(u => u.role === 'management' && u.verified !== false);
+        setManagementUsers(mngUsers);
+
         const saved = localStorage.getItem('rqs_kepengurusan');
         if (saved) {
             setPengurusList(JSON.parse(saved));
@@ -51,12 +58,13 @@ const KelolaKepengurusan = ({ onBack }) => {
         let updated;
 
         if (editingId) {
-            updated = saved.map(p => p.id === editingId ? { ...p, type, namaLengkap, peran, deskripsi, icon } : p);
+            updated = saved.map(p => p.id === editingId ? { ...p, type, namaLengkap, userId, peran, deskripsi, icon } : p);
         } else {
             const newPengurus = {
                 id: Date.now().toString(),
                 type,
                 namaLengkap,
+                userId,
                 peran,
                 deskripsi: type === 'divisi' ? deskripsi : '',
                 icon: type === 'divisi' ? icon : (type === 'pimpinan' ? 'user' : 'user')
@@ -84,6 +92,7 @@ const KelolaKepengurusan = ({ onBack }) => {
         setEditingId(item.id);
         setType(item.type);
         setNamaLengkap(item.namaLengkap);
+        setUserId(item.userId || '');
         setPeran(item.peran);
         setDeskripsi(item.deskripsi || '');
         setIcon(item.icon || 'user');
@@ -99,6 +108,7 @@ const KelolaKepengurusan = ({ onBack }) => {
         setEditingId(null);
         setType('pimpinan');
         setNamaLengkap('');
+        setUserId('');
         setPeran('');
         setDeskripsi('');
         setIcon('user');
@@ -106,6 +116,10 @@ const KelolaKepengurusan = ({ onBack }) => {
 
     const pimpinanList = pengurusList.filter(p => p.type === 'pimpinan');
     const divisiList = pengurusList.filter(p => p.type === 'divisi');
+
+    // Anggota are management users whose ID is not in pengurusList.userId
+    const assignedUserIds = pengurusList.map(p => p.userId);
+    const anggotaList = managementUsers.filter(u => !assignedUserIds.includes(u.id));
 
     return (
         <div className="pb-28 animate-in fade-in duration-500 bg-[#FDFBF7] min-h-screen">
@@ -128,6 +142,32 @@ const KelolaKepengurusan = ({ onBack }) => {
                     Tambah Pengurus Baru
                 </button>
 
+                {/* Daftar Anggota Belum Ditempatkan */}
+                <h3 className="font-bold text-[#4A1C14] text-sm mb-3 border-b border-[#E8D2A6]/30 pb-2 flex justify-between items-center">
+                    <span>Anggota Management</span>
+                    <span className="text-[10px] bg-[#FCF7E8] text-[#B88A44] px-2 py-0.5 rounded-full">{anggotaList.length} Orang</span>
+                </h3>
+                {anggotaList.length === 0 ? (
+                    <div className="text-center py-6 bg-white rounded-2xl border border-dashed border-[#E8D2A6] mb-6">
+                        <p className="text-[11px] text-[#4A1C14]/60">Semua anggota management sudah ditempatkan.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3 mb-8">
+                        {anggotaList.map(u => (
+                            <div key={u.id} className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-bold">
+                                    {u.nama.charAt(0)}
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <h4 className="font-bold text-gray-800 text-sm truncate">{u.nama}</h4>
+                                    <p className="text-[10px] text-gray-500 truncate">{u.email} | {u.phone}</p>
+                                    <p className="text-[9px] text-indigo-500 mt-0.5">Menunggu penempatan posisi...</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Seksi Dewan Pimpinan */}
                 <h3 className="font-bold text-[#4A1C14] text-sm mb-3 border-b border-[#E8D2A6]/30 pb-2">
                     Dewan Pimpinan & Pembina
@@ -144,10 +184,13 @@ const KelolaKepengurusan = ({ onBack }) => {
                                 <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
                                     <PhosphorIcon icon="user-circle" size={24} weight="fill" />
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-gray-800 text-sm">{p.namaLengkap}</h4>
+                                <div className="flex-1 overflow-hidden">
+                                    <h4 className="font-bold text-gray-800 text-sm truncate">{p.namaLengkap}</h4>
                                     <p className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-md inline-block mt-1">
                                         {p.peran}
+                                    </p>
+                                    <p className="text-[9px] text-gray-400 mt-1 truncate">
+                                        Akun: {managementUsers.find(u => u.id === p.userId)?.nama || 'Belum dihubungkan'}
                                     </p>
                                 </div>
                                 <div className="flex gap-1.5 shrink-0">
@@ -189,9 +232,12 @@ const KelolaKepengurusan = ({ onBack }) => {
                                     <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
                                         <PhosphorIcon icon={p.icon || 'users'} size={20} weight="fill" />
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-gray-800 text-[13px]">{p.peran}</h4>
-                                        <p className="text-[10px] font-bold text-gray-600 mt-0.5">Koor: {p.namaLengkap}</p>
+                                    <div className="overflow-hidden">
+                                        <h4 className="font-bold text-gray-800 text-[13px] truncate">{p.peran}</h4>
+                                        <p className="text-[10px] font-bold text-gray-600 mt-0.5 truncate">Koor: {p.namaLengkap}</p>
+                                        <p className="text-[9px] text-gray-400 mt-0.5 truncate">
+                                            Akun: {managementUsers.find(u => u.id === p.userId)?.nama || 'Belum dihubungkan'}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="bg-gray-50 p-2 rounded-lg border border-gray-100 mt-1">
@@ -252,6 +298,20 @@ const KelolaKepengurusan = ({ onBack }) => {
                                             placeholder={type === 'pimpinan' ? "Cth: Ust. H. Sobari, S.Pd.I" : "Cth: Ust. Zaid"} 
                                             className="w-full bg-white border border-[#E8D2A6]/80 rounded-xl px-4 py-3 text-sm text-[#4A1C14] outline-none focus:border-[#B88A44]"
                                         />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-[#4A1C14] uppercase tracking-wider block mb-1.5">Pilih Akun Terdaftar</label>
+                                        <select 
+                                            value={userId}
+                                            onChange={(e) => setUserId(e.target.value)}
+                                            className="w-full bg-white border border-[#E8D2A6]/80 rounded-xl px-4 py-3 text-sm text-[#4A1C14] outline-none focus:border-[#B88A44]"
+                                        >
+                                            <option value="">-- Pilih Akun Management --</option>
+                                            {managementUsers.map(u => (
+                                                <option key={u.id} value={u.id}>{u.nama} ({u.email})</option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     <div>

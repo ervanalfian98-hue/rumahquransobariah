@@ -23,10 +23,55 @@ import KelolaSosmed from './KelolaSosmed';
 const MasterScreen = () => {
     const [activeMenu, setActiveMenu] = useState(null);
     const activeMenuRef = useRef(activeMenu);
+    
+    const [stats, setStats] = useState({
+        totalTholibah: 0,
+        totalManagement: 0,
+        attendancePercentage: 0
+    });
 
     useEffect(() => {
         activeMenuRef.current = activeMenu;
     }, [activeMenu]);
+
+    useEffect(() => {
+        const loadStats = () => {
+            // Load Total Tholibah and Total Management
+            const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+            const totalTholibah = allUsers.filter(u => u.role === 'tholibah' && u.verified !== false).length;
+            const totalManagement = allUsers.filter(u => u.role === 'management' && u.verified !== false).length;
+
+            // Load Attendance (checking rqs_jadwal if any)
+            const jadwalData = JSON.parse(localStorage.getItem('rqs_jadwal') || '[]');
+            let totalHadir = 0;
+            let totalExpected = 0;
+            
+            jadwalData.forEach(j => {
+                if (j.absensi && j.absensi.length > 0) {
+                    totalHadir += j.absensi.length;
+                    // We don't have total expected per session easily available, so we'll just mock a percentage based on presence vs total tholibah
+                    // Or if we want a realistic percentage:
+                    totalExpected += (totalTholibah > 0 ? totalTholibah : 10); 
+                }
+            });
+            
+            let attendancePercentage = 0;
+            if (totalExpected > 0) {
+                attendancePercentage = Math.round((totalHadir / totalExpected) * 100);
+                if (attendancePercentage > 100) attendancePercentage = 100;
+            }
+
+            setStats({
+                totalTholibah,
+                totalManagement,
+                attendancePercentage: attendancePercentage > 0 ? attendancePercentage : 0 // 0 means no data yet
+            });
+        };
+
+        loadStats();
+        window.addEventListener('storage', loadStats);
+        return () => window.removeEventListener('storage', loadStats);
+    }, []);
 
     useEffect(() => {
         const handleBack = (e) => {
@@ -84,19 +129,19 @@ const MasterScreen = () => {
                     {/* Stat 1 */}
                     <div className="bg-white border border-[#E8D2A6] rounded-[1.25rem] p-3 flex flex-col items-center justify-center text-center shadow-sm">
                         <span className="text-[10px] font-semibold text-[#4A1C14]/70 mb-1 leading-tight">Total<br />Tholibah</span>
-                        <span className="text-xl font-bold text-[#B88A44]">2,450</span>
+                        <span className="text-xl font-bold text-[#B88A44]">{stats.totalTholibah}</span>
                         <span className="text-[10px] text-[#4A1C14]/60 mt-0.5">Tholibah</span>
                     </div>
                     {/* Stat 2 */}
                     <div className="bg-white border border-[#E8D2A6] rounded-[1.25rem] p-3 flex flex-col items-center justify-center text-center shadow-sm">
-                        <span className="text-[10px] font-semibold text-[#4A1C14]/70 mb-1 leading-tight">Active<br />Classes</span>
-                        <span className="text-xl font-bold text-[#B88A44]">87</span>
-                        <span className="text-[10px] text-[#4A1C14]/60 mt-0.5">Kelas</span>
+                        <span className="text-[10px] font-semibold text-[#4A1C14]/70 mb-1 leading-tight">Total<br />Management</span>
+                        <span className="text-xl font-bold text-[#B88A44]">{stats.totalManagement}</span>
+                        <span className="text-[10px] text-[#4A1C14]/60 mt-0.5">Pengurus</span>
                     </div>
                     {/* Stat 3 */}
                     <div className="bg-white border border-[#E8D2A6] rounded-[1.25rem] p-3 flex flex-col items-center justify-center text-center shadow-sm">
                         <span className="text-[10px] font-semibold text-[#4A1C14]/70 mb-1 leading-tight">Monthly<br />Attendance</span>
-                        <span className="text-xl font-bold text-[#B88A44]">92%</span>
+                        <span className="text-xl font-bold text-[#B88A44]">{stats.attendancePercentage}%</span>
                         <span className="text-[10px] text-[#4A1C14]/60 mt-0.5">Kehadiran</span>
                     </div>
                 </div>
@@ -125,7 +170,16 @@ const MasterScreen = () => {
                         <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Pantau jadwal mengajar, evaluasi, dan data asatidz</p>
                     </div>
 
-                    {/* Card 3 */}
+                    {/* Card 3: Kelola Kepengurusan */}
+                    <div onClick={() => handleMenuClick('kepengurusan')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
+                            <PhosphorIcon icon="users-three" size={28} />
+                        </div>
+                        <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola Pengurus</h4>
+                        <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Kelola struktur pimpinan dan divisi kepengurusan RQS</p>
+                    </div>
+
+                    {/* Card 4 */}
                     <div onClick={() => handleMenuClick('kurikulum')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
                         <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="book-open-text" size={28} />
@@ -206,18 +260,11 @@ const MasterScreen = () => {
                         <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Simak dan beri catatan hafalan para tholibah</p>
                     </div>
 
-                    {/* Card 10: Kelola Kepengurusan */}
-                    <div onClick={() => handleMenuClick('kepengurusan')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
-                            <PhosphorIcon icon="users-three" size={28} />
-                        </div>
-                        <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Susunan Pengurus</h4>
-                        <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Kelola struktur pimpinan dan divisi kepengurusan RQS</p>
-                    </div>
+
 
                     {/* Card 11: Kelola RQS Berdaya */}
                     <div onClick={() => handleMenuClick('rqsBerdaya')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3 text-blue-500">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="handshake" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola RQS Berdaya</h4>
@@ -226,7 +273,7 @@ const MasterScreen = () => {
 
                     {/* Card 12: Kelola Merchandise */}
                     <div onClick={() => handleMenuClick('merchandise')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mb-3 text-orange-500">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="t-shirt" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola Merchandise</h4>
@@ -235,7 +282,7 @@ const MasterScreen = () => {
 
                     {/* Card 13: Kelola RQS Herbal */}
                     <div onClick={() => handleMenuClick('rqsHerbal')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3 text-green-500">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="leaf" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola RQS Herbal</h4>
@@ -244,7 +291,7 @@ const MasterScreen = () => {
 
                     {/* Card 14: Kelola Tamyiz */}
                     <div onClick={() => handleMenuClick('tamyiz')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mb-3 text-teal-500">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="certificate" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola Tamyiz</h4>
@@ -253,7 +300,7 @@ const MasterScreen = () => {
 
                     {/* Card 15: Kelola Qurban */}
                     <div onClick={() => handleMenuClick('qurban')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-3 text-amber-600">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="cow" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola Qurban</h4>
@@ -262,7 +309,7 @@ const MasterScreen = () => {
 
                     {/* Card 16: Kelola Rekening */}
                     <div onClick={() => handleMenuClick('rekening')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3 text-green-600">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="bank" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola Rekening</h4>
@@ -271,7 +318,7 @@ const MasterScreen = () => {
 
                     {/* Card 17: Kelola Sosial Media */}
                     <div onClick={() => handleMenuClick('sosmed')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3 text-blue-600">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
                             <PhosphorIcon icon="share-network" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola Sosial Media</h4>

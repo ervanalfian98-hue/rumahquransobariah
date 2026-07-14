@@ -14,15 +14,22 @@ const KELAS_LIST = [
 
 const KelolaPengajar = ({ onBack }) => {
     const [pengajarList, setPengajarList] = useState([]);
+    const [managementUsers, setManagementUsers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     // Form state
     const [editingId, setEditingId] = useState(null);
     const [nama, setNama] = useState('');
+    const [userId, setUserId] = useState('');
     const [gender, setGender] = useState('ustadzah');
     const [selectedClasses, setSelectedClasses] = useState([]);
 
     const loadPengajar = () => {
+        // Load all users to find management
+        const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        const mngUsers = allUsers.filter(u => u.role === 'management' && u.verified !== false);
+        setManagementUsers(mngUsers);
+
         const saved = localStorage.getItem('rqs_pengajar');
         if (saved) {
             setPengajarList(JSON.parse(saved));
@@ -54,11 +61,12 @@ const KelolaPengajar = ({ onBack }) => {
         let updated;
 
         if (editingId) {
-            updated = saved.map(p => p.id === editingId ? { ...p, name: nama, gender, classes: selectedClasses } : p);
+            updated = saved.map(p => p.id === editingId ? { ...p, name: nama, gender, classes: selectedClasses, userId } : p);
         } else {
             const newPengajar = {
                 id: Date.now().toString(),
                 name: nama,
+                userId,
                 gender,
                 classes: selectedClasses
             };
@@ -84,6 +92,7 @@ const KelolaPengajar = ({ onBack }) => {
     const openEdit = (pengajar) => {
         setEditingId(pengajar.id);
         setNama(pengajar.name);
+        setUserId(pengajar.userId || '');
         setGender(pengajar.gender);
         setSelectedClasses(pengajar.classes || []);
         setIsModalOpen(true);
@@ -97,6 +106,7 @@ const KelolaPengajar = ({ onBack }) => {
     const resetForm = () => {
         setEditingId(null);
         setNama('');
+        setUserId('');
         setGender('ustadzah');
         setSelectedClasses([]);
     };
@@ -159,6 +169,9 @@ const KelolaPengajar = ({ onBack }) => {
                                             </h4>
                                             <p className="text-[10px] text-[#4A1C14]/60 bg-[#FCF7E8] px-2 py-0.5 rounded-md inline-block mt-1">
                                                 {p.classes.length} Kelas Diajar
+                                            </p>
+                                            <p className="text-[9px] text-gray-400 mt-1">
+                                                Akun: {managementUsers.find(u => u.id === p.userId)?.nama || 'Belum dihubungkan'}
                                             </p>
                                         </div>
                                     </div>
@@ -223,6 +236,21 @@ const KelolaPengajar = ({ onBack }) => {
                                             placeholder="Cth: Lia, Hanan..." 
                                             className="w-full bg-white border border-[#E8D2A6]/80 rounded-xl px-4 py-3 text-sm text-[#4A1C14] outline-none focus:border-[#B88A44] transition-all"
                                         />
+                                    </div>
+
+                                    {/* Akun Terdaftar */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-[#4A1C14] uppercase tracking-wider block mb-1.5">Akun Terdaftar</label>
+                                        <select 
+                                            value={userId}
+                                            onChange={(e) => setUserId(e.target.value)}
+                                            className="w-full bg-white border border-[#E8D2A6]/80 rounded-xl px-4 py-3 text-sm text-[#4A1C14] outline-none focus:border-[#B88A44] transition-all"
+                                        >
+                                            <option value="">-- Pilih Akun (Opsional) --</option>
+                                            {managementUsers.map(u => (
+                                                <option key={u.id} value={u.id}>{u.nama} ({u.email})</option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     {/* Gelar / Gender */}
