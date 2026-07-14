@@ -439,6 +439,33 @@ const generateLesson = (level, stage) => {
     });
 };
 
+const generatePlacementExam = (targetLevel) => {
+    let pool = [];
+    for (let l = 1; l < targetLevel; l++) {
+        pool = pool.concat(getQuestionsForLevel(l, 10));
+        pool = pool.concat(getQuestionsForLevel(l, 20));
+        pool = pool.concat(getQuestionsForLevel(l, 30));
+    }
+    const shuffled = shuffle(pool);
+    const selected = shuffled.slice(0, 15); // minimum 15 questions
+    
+    return selected.map((item, i) => {
+        const wrongPool = pool.filter(p => p.ar !== item.ar);
+        const distractors = shuffle(wrongPool).slice(0, 3);
+        const options = shuffle([item, ...distractors]);
+        
+        let type = 'ar-to-lt';
+        const rand = Math.random();
+        if (targetLevel <= 2) {
+            type = rand > 0.8 ? 'voice' : (rand > 0.5 ? 'lt-to-ar' : 'ar-to-lt');
+        } else {
+            type = rand > 0.85 ? 'voice' : 'ar-to-lt';
+        }
+        
+        return { id: i, type, target: item, options };
+    });
+};
+
 // ============================================================
 // LEVEL METADATA
 // ============================================================
@@ -537,6 +564,9 @@ const PathNode = ({ stage, status, onClick, levelColor, isExam }) => {
     } else if (status === 'current') {
         bgStyle = { background: levelColor, borderColor: levelColor, color: '#fff', boxShadow: `0 4px 0 rgba(0,0,0,0.2)` };
         icon = <PhosphorIcon icon="star" size={22} weight="fill" />;
+    } else if (status === 'jump') {
+        bgStyle = { background: '#FEF3C7', borderColor: '#F59E0B', color: '#B45309', boxShadow: '0 4px 0 #F59E0B' };
+        icon = <PhosphorIcon icon="rocket-launch" size={22} weight="fill" />;
     } else {
         bgStyle = { background: '#E5E7EB', borderColor: '#D1D5DB', color: '#9CA3AF', boxShadow: '0 4px 0 #D1D5DB' };
         icon = <PhosphorIcon icon="lock" size={22} weight="fill" />;
@@ -544,7 +574,7 @@ const PathNode = ({ stage, status, onClick, levelColor, isExam }) => {
 
     return (
         <div className="flex flex-col items-center relative">
-            {isExam && status !== 'locked' && (
+            {isExam && status !== 'locked' && status !== 'jump' && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center z-10 shadow" title="Ujian Waktu">
                     <span className="text-[9px] font-bold text-yellow-900">⏱</span>
                 </div>
@@ -552,12 +582,12 @@ const PathNode = ({ stage, status, onClick, levelColor, isExam }) => {
             <button
                 onClick={status !== 'locked' ? () => onClick(stage) : undefined}
                 style={bgStyle}
-                className={`w-14 h-14 rounded-full border-b-4 flex flex-col items-center justify-center transition-transform active:scale-95 relative ${status === 'current' ? 'animate-bounce' : ''} ${status === 'locked' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                className={`w-14 h-14 rounded-full border-b-4 flex flex-col items-center justify-center transition-transform active:scale-95 relative ${status === 'current' || status === 'jump' ? 'animate-bounce' : ''} ${status === 'locked' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             >
                 {icon}
             </button>
-            <span className="text-[10px] font-bold text-gray-500 mt-1 bg-white/80 px-1 rounded-md">
-                {isExam ? `⏱ Ujian ${stage}` : `Stage ${stage}`}
+            <span className="text-[10px] font-bold text-gray-500 mt-1 bg-white/80 px-1 rounded-md text-center">
+                {status === 'jump' ? 'Ujian Loncat' : isExam ? `⏱ Ujian ${stage}` : `Stage ${stage}`}
             </span>
         </div>
     );
@@ -588,10 +618,9 @@ const TimedExamBanner = ({ timeLeft, totalTime }) => {
 // ============================================================
 // MAIN IQRA COMPONENT
 // ============================================================
-const Iqra = ({ setActiveTab }) => {
+const Iqra = ({ setActiveTab, currentUser }) => {
     const [activeLevel, setActiveLevel] = useState(1);
-    // All stages unlocked for testing
-    const [progress, setProgress] = useState({ 1: 31, 2: 31, 3: 31, 4: 31, 5: 31, 6: 31 });
+    const [progress, setProgress] = useState({ 1: 1 });
 
     const [currentView, setCurrentView] = useState('path');
 
@@ -609,32 +638,39 @@ const Iqra = ({ setActiveTab }) => {
     const [isListening, setIsListening] = useState(false);
     const [voiceTranscript, setVoiceTranscript] = useState('');
     const [isExamMode, setIsExamMode] = useState(false);
+    const [isPlacementMode, setIsPlacementMode] = useState(false);
     const [leaderboard, setLeaderboard] = useState([]);
     const [showAllRanks, setShowAllRanks] = useState(false);
 
     // Load total score and leaderboard
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const savedScore = localStorage.getItem('rqs_iqra_score');
+            const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+            const scoreKey = userKey ? `rqs_iqra_score_${userKey}` : 'rqs_iqra_score';
+            const gamifiedKey = userKey ? `rqs_iqra_gamified_${userKey}` : 'rqs_iqra_gamified';
+            
+            const savedScore = localStorage.getItem(scoreKey);
             if (savedScore) setTotalScore(parseInt(savedScore));
             
-            let savedLb = localStorage.getItem('rqs_iqra_leaderboard');
-            if (!savedLb) {
-                savedLb = JSON.stringify([
-                    { name: 'Ahmad', score: 1450 },
-                    { name: 'Fatimah', score: 1230 },
-                    { name: 'Umar', score: 980 },
-                    { name: 'Aisyah', score: 750 },
-                    { name: 'Ali', score: 420 },
-                    { name: 'Budi', score: 320 },
-                    { name: 'Siti', score: 250 },
-                    { name: 'Zahra', score: 120 }
-                ]);
-                localStorage.setItem('rqs_iqra_leaderboard', savedLb);
+            const savedProgress = localStorage.getItem(gamifiedKey);
+            if (savedProgress) setProgress(JSON.parse(savedProgress));
+            
+            const usersData = localStorage.getItem('rqs_users');
+            if (usersData) {
+                const users = JSON.parse(usersData);
+                const lb = [];
+                users.forEach(u => {
+                    const uKey = u.username || u.id;
+                    const uScore = localStorage.getItem(`rqs_iqra_score_${uKey}`);
+                    if (uScore && parseInt(uScore) > 0) {
+                        lb.push({ name: u.nama || u.username, score: parseInt(uScore), isMe: uKey === userKey });
+                    }
+                });
+                lb.sort((a,b) => b.score - a.score);
+                setLeaderboard(lb);
             }
-            setLeaderboard(JSON.parse(savedLb));
         }
-    }, []);
+    }, [currentUser]);
 
     // Timed exam
     const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
@@ -702,14 +738,24 @@ const Iqra = ({ setActiveTab }) => {
 
     const saveProgress = (newProgress) => {
         setProgress(newProgress);
-        localStorage.setItem('rqs_iqra_gamified', JSON.stringify(newProgress));
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const gamifiedKey = userKey ? `rqs_iqra_gamified_${userKey}` : 'rqs_iqra_gamified';
+        localStorage.setItem(gamifiedKey, JSON.stringify(newProgress));
     };
 
     // ------- LESSON LOGIC -------
     const startLesson = (stage) => {
+        if (stage === 'jump') {
+            if (window.confirm(`Anda ingin loncat ke Iqra ${activeLevel}? Anda harus menyelesaikan Ujian Penempatan (15 soal acak) dengan maksimal salah 5 kali. Mulai sekarang?`)) {
+                startPlacementExam(activeLevel);
+            }
+            return;
+        }
+
         const exam = isTimedExamStage(stage);
         setActiveStage(stage);
         setIsExamMode(exam);
+        setIsPlacementMode(false);
         const questions = generateLesson(activeLevel, stage);
         setLessonData(questions);
         setCurrentQIndex(0);
@@ -720,6 +766,32 @@ const Iqra = ({ setActiveTab }) => {
         setTimeLeft(EXAM_TIME);
         setCurrentView('lesson');
     };
+
+    const startPlacementExam = (targetLevel) => {
+        setIsPlacementMode(true);
+        setActiveStage(1);
+        setIsExamMode(true);
+        const questions = generatePlacementExam(targetLevel);
+        setLessonData(questions);
+        setCurrentQIndex(0);
+        setSelectedOption(null);
+        setIsAnswerChecked(false);
+        setHearts(5); // 5 hearts for 15 questions
+        setScore(0);
+        setTimeLeft(EXAM_TIME);
+        setCurrentView('lesson');
+    };
+
+    useEffect(() => {
+        if (isPlacementMode && hearts <= 0 && currentView === 'lesson') {
+            clearInterval(timerRef.current);
+            setTimeout(() => {
+                alert("Maaf, Anda terlalu banyak salah. Anda GAGAL ujian penempatan. Silakan coba lagi.");
+                setIsPlacementMode(false);
+                setCurrentView('path');
+            }, 300);
+        }
+    }, [hearts, isPlacementMode, currentView]);
 
     const handleOptionSelect = (opt) => {
         if (isAnswerChecked) return;
@@ -739,7 +811,11 @@ const Iqra = ({ setActiveTab }) => {
             setScore(s => s + points);
             setTotalScore(ts => {
                 const newTs = ts + points;
-                if (typeof window !== 'undefined') localStorage.setItem('rqs_iqra_score', newTs);
+                if (typeof window !== 'undefined') {
+                    const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+                    const scoreKey = userKey ? `rqs_iqra_score_${userKey}` : 'rqs_iqra_score';
+                    localStorage.setItem(scoreKey, newTs);
+                }
                 return newTs;
             });
         } else {
@@ -819,6 +895,13 @@ const Iqra = ({ setActiveTab }) => {
     };
 
     const handleLessonComplete = () => {
+        if (isPlacementMode) {
+            alert(`Selamat! Anda lulus Ujian Penempatan dan berhak masuk Iqra ${activeLevel}!`);
+            saveProgress({ ...progress, [activeLevel]: 1 });
+            setIsPlacementMode(false);
+            setCurrentView('path');
+            return;
+        }
         setCurrentView('success');
         setTimeout(() => playCorrectSFX(), 100);
         setTimeout(() => playCorrectSFX(), 400);
@@ -827,10 +910,22 @@ const Iqra = ({ setActiveTab }) => {
 
     // ------- PATH VIEW -------
     if (currentView === 'path') {
-        const currentUnlocked = progress[activeLevel] || 1;
+        const currentUnlocked = progress[activeLevel] || 0;
 
-        const allUsers = [...leaderboard, { name: 'Anda (Saya)', score: totalScore, isMe: true }].sort((a, b) => b.score - a.score);
-        const myRank = allUsers.findIndex(u => u.isMe) + 1;
+        let allUsers = [...leaderboard];
+        const isMyScoreInLeaderboard = allUsers.some(u => u.isMe);
+        // Only include "Anda (Saya)" in leaderboard if we don't have a score in the real leaderboard yet but we have totalScore locally
+        // Or actually, if it's already in `leaderboard`, it's marked `isMe`.
+        if (!isMyScoreInLeaderboard && totalScore > 0) {
+            allUsers.push({ name: currentUser?.nama || 'Saya', score: totalScore, isMe: true });
+            allUsers.sort((a, b) => b.score - a.score);
+        }
+        
+        let myRankText = "Belum Ada Peringkat";
+        const myIndex = allUsers.findIndex(u => u.isMe);
+        if (myIndex !== -1) {
+            myRankText = `Peringkat #${myIndex + 1}`;
+        }
 
         return (
             <div className="pb-32 animate-in fade-in duration-500 bg-[#FAFAFA] min-h-screen">
@@ -884,30 +979,38 @@ const Iqra = ({ setActiveTab }) => {
                             <PhosphorIcon icon="trophy" weight="fill" className="text-yellow-500" size={20} /> 
                             Peringkat Kelas
                         </h3>
-                        <span className="text-xs font-bold bg-yellow-100 text-yellow-700 px-2 py-1 rounded-lg">Peringkat #{myRank}</span>
+                        {myIndex !== -1 && (
+                            <span className="text-xs font-bold bg-yellow-100 text-yellow-700 px-2 py-1 rounded-lg">{myRankText}</span>
+                        )}
                     </div>
-                    <div className="space-y-2">
-                        {allUsers.slice(0, showAllRanks ? allUsers.length : 3).map((user, idx) => (
-                            <div key={idx} className={`flex items-center justify-between p-2 rounded-xl text-sm ${user.isMe ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
-                                <div className="flex items-center gap-3">
-                                    <span className={`w-6 text-center font-bold ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-700' : 'text-gray-400'}`}>
-                                        {idx + 1}
-                                    </span>
-                                    <span className={`font-medium ${user.isMe ? 'text-blue-700 font-bold' : 'text-gray-700'}`}>{user.name}</span>
-                                </div>
-                                <span className={`font-bold ${user.isMe ? 'text-blue-700' : 'text-gray-600'}`}>{user.score} pt</span>
+                    {allUsers.length === 0 ? (
+                        <div className="text-sm text-gray-500 text-center py-4">Belum ada peserta yang memiliki skor. Mulai belajar sekarang!</div>
+                    ) : (
+                        <>
+                            <div className="space-y-2">
+                                {allUsers.slice(0, showAllRanks ? allUsers.length : 3).map((user, idx) => (
+                                    <div key={idx} className={`flex items-center justify-between p-2 rounded-xl text-sm ${user.isMe ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`w-6 text-center font-bold ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-700' : 'text-gray-400'}`}>
+                                                {idx + 1}
+                                            </span>
+                                            <span className={`font-medium ${user.isMe ? 'text-blue-700 font-bold' : 'text-gray-700'}`}>{user.name}</span>
+                                        </div>
+                                        <span className={`font-bold ${user.isMe ? 'text-blue-700' : 'text-gray-600'}`}>{user.score} pt</span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                    {!showAllRanks && allUsers.length > 3 && (
-                        <button onClick={() => setShowAllRanks(true)} className="w-full text-center text-xs text-blue-600 font-bold py-2 mt-2 bg-blue-50 rounded-lg active:scale-95 transition-all">
-                            Lihat Peringkat Lainnya ({allUsers.length - 3})
-                        </button>
-                    )}
-                    {showAllRanks && (
-                        <button onClick={() => setShowAllRanks(false)} className="w-full text-center text-xs text-gray-500 font-bold py-2 mt-2 bg-gray-50 rounded-lg active:scale-95 transition-all">
-                            Sembunyikan Peringkat
-                        </button>
+                            {!showAllRanks && allUsers.length > 3 && (
+                                <button onClick={() => setShowAllRanks(true)} className="w-full text-center text-xs text-blue-600 font-bold py-2 mt-2 bg-blue-50 rounded-lg active:scale-95 transition-all">
+                                    Lihat Peringkat Lainnya ({allUsers.length - 3})
+                                </button>
+                            )}
+                            {showAllRanks && (
+                                <button onClick={() => setShowAllRanks(false)} className="w-full text-center text-xs text-gray-500 font-bold py-2 mt-2 bg-gray-50 rounded-lg active:scale-95 transition-all">
+                                    Sembunyikan Peringkat
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -917,13 +1020,14 @@ const Iqra = ({ setActiveTab }) => {
                     
                     {Array.from({ length: 30 }, (_, i) => i + 1).map(stage => {
                         let status = 'locked';
-                        if (stage < currentUnlocked) status = 'completed';
-                        else if (stage === currentUnlocked || currentUnlocked > 30) status = 'completed';
-                        else if (stage === Math.min(currentUnlocked, 30)) status = 'current';
-
-                        // For testing: all unlocked
-                        status = 'completed';
-                        if (stage === 1) status = 'current';
+                        
+                        if (currentUnlocked > 0) {
+                            if (stage < currentUnlocked) status = 'completed';
+                            else if (stage === currentUnlocked || currentUnlocked > 30) status = 'current';
+                        } else {
+                            // Level locked, but stage 1 is the jump exam trigger
+                            if (stage === 1 && activeLevel > 1) status = 'jump';
+                        }
 
                         const exam = isTimedExamStage(stage);
                         const xOffset = getZigzagPos(stage) * ZIGZAG_WIDTH;
@@ -942,7 +1046,10 @@ const Iqra = ({ setActiveTab }) => {
                                 <PathNode
                                     stage={stage}
                                     status={status}
-                                    onClick={startLesson}
+                                    onClick={(s) => {
+                                        if (status === 'jump') startLesson('jump');
+                                        else startLesson(s);
+                                    }}
                                     levelColor={levelMeta.color}
                                     isExam={exam}
                                 />

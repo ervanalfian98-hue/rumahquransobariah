@@ -48,22 +48,26 @@ const DEED_CATEGORIES = [
     }
 ];
 
-const AmalScreen = ({ setActiveTab }) => {
+const AmalScreen = ({ setActiveTab, currentUser }) => {
     // Trik untuk menginisialisasi state dari localStorage secara sinkron
     // agar tidak ada efek "berkedip" dari kosong menjadi terisi.
     const [checkedItems, setCheckedItems] = useState(() => {
         try {
-            const savedDate = localStorage.getItem('amal_date');
+            const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+            const dateKey = userKey ? `amal_date_${userKey}` : 'amal_date';
+            const checkedKey = userKey ? `amal_checked_${userKey}` : 'amal_checked';
+            
+            const savedDate = localStorage.getItem(dateKey);
             const today = new Date().toLocaleDateString('id-ID');
             
             // Jika hari berganti, reset semua amalan menjadi kosong
             if (savedDate !== today) {
-                localStorage.setItem('amal_date', today);
-                localStorage.setItem('amal_checked', JSON.stringify({}));
+                localStorage.setItem(dateKey, today);
+                localStorage.setItem(checkedKey, JSON.stringify({}));
                 return {};
             }
             
-            const saved = localStorage.getItem('amal_checked');
+            const saved = localStorage.getItem(checkedKey);
             return saved ? JSON.parse(saved) : {};
         } catch (e) {
             return {};
@@ -72,8 +76,10 @@ const AmalScreen = ({ setActiveTab }) => {
 
     // Simpan ke localStorage setiap ada perubahan ceklis
     useEffect(() => {
-        localStorage.setItem('amal_checked', JSON.stringify(checkedItems));
-    }, [checkedItems]);
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const checkedKey = userKey ? `amal_checked_${userKey}` : 'amal_checked';
+        localStorage.setItem(checkedKey, JSON.stringify(checkedItems));
+    }, [checkedItems, currentUser]);
 
     const toggleItem = (itemId) => {
         setCheckedItems(prev => ({

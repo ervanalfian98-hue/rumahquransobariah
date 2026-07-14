@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 
-const KalenderScreen = ({ setActiveTab }) => {
+const KalenderScreen = ({ setActiveTab, currentUser }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [notes, setNotes] = useState({});
     const [noteInput, setNoteInput] = useState('');
 
     useEffect(() => {
-        const savedNotes = localStorage.getItem('rqs_calendar_notes');
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const notesKey = userKey ? `rqs_calendar_notes_${userKey}` : 'rqs_calendar_notes';
+        const savedNotes = localStorage.getItem(notesKey);
         if (savedNotes) {
             setNotes(JSON.parse(savedNotes));
         }
-    }, []);
+    }, [currentUser]);
 
     const getHijriDate = (date) => {
         try {
@@ -233,18 +235,28 @@ const KalenderScreen = ({ setActiveTab }) => {
     const fastingToday = isFastingDay(selectedDate, hijriSelected);
 
     const handleSaveNote = () => {
-        if (!noteInput.trim()) return;
-        const newNotes = { ...notes, [selectedDateString]: noteInput };
+        const dateKey = selectedDateString;
+        const newNotes = { ...notes };
+        if (noteInput.trim()) {
+            newNotes[dateKey] = noteInput;
+        } else {
+            delete newNotes[dateKey];
+        }
         setNotes(newNotes);
-        localStorage.setItem('rqs_calendar_notes', JSON.stringify(newNotes));
+        
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const notesKey = userKey ? `rqs_calendar_notes_${userKey}` : 'rqs_calendar_notes';
+        localStorage.setItem(notesKey, JSON.stringify(newNotes));
         setNoteInput('');
     };
 
     const handleDeleteNote = () => {
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const notesKey = userKey ? `rqs_calendar_notes_${userKey}` : 'rqs_calendar_notes';
         const newNotes = { ...notes };
         delete newNotes[selectedDateString];
         setNotes(newNotes);
-        localStorage.setItem('rqs_calendar_notes', JSON.stringify(newNotes));
+        localStorage.setItem(notesKey, JSON.stringify(newNotes));
     };
 
     return (

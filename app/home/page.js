@@ -189,11 +189,11 @@ export default function App() {
                     <BerandaScreen setActiveTab={handleTabChange} currentUser={currentUser} />
                 </div>
                 {activeTab === 'pendidikan' ? <PendidikanScreen currentUser={currentUser} />
-                : activeTab === 'quran' ? <QuranScreen />
+                : activeTab === 'quran' ? <QuranScreen currentUser={currentUser} />
                 : activeTab === 'kategori' ? <KategoriScreen setActiveTab={handleTabChange} />
                 : activeTab === 'pengajar' ? <PengajarScreen setActiveTab={handleTabChange} />
                 : activeTab === 'master' ? <MasterScreen />
-                : activeTab === 'kalender' ? <KalenderScreen setActiveTab={handleTabChange} />
+                : activeTab === 'kalender' ? <KalenderScreen setActiveTab={handleTabChange} currentUser={currentUser} />
                 : activeTab === 'kiblat' ? <KiblatScreen setActiveTab={handleTabChange} />
                 : activeTab === 'hadist' ? <HadistScreen setActiveTab={handleTabChange} />
                 : activeTab === 'zakat' ? <ZakatScreen setActiveTab={handleTabChange} />
@@ -206,14 +206,14 @@ export default function App() {
                 : activeTab === 'asbabun-nuzul' ? <AsbabunNuzulScreen setActiveTab={handleTabChange} />
                 : activeTab === 'tafsir' ? <TafsirScreen setActiveTab={handleTabChange} />
                 : activeTab === 'bacaan-sholat' ? <BacaanSholatScreen setActiveTab={handleTabChange} />
-                : activeTab === 'tasbih' ? <TasbihScreen setActiveTab={handleTabChange} />
+                : activeTab === 'tasbih' ? <TasbihScreen setActiveTab={handleTabChange} currentUser={currentUser} />
                 : activeTab === 'sirah-nabi' ? <SirahNabiScreen setActiveTab={handleTabChange} />
                 : activeTab === 'asmaul-husna' ? <AsmaulHusnaScreen setActiveTab={handleTabChange} />
                 : activeTab === 'kisah-25-nabi' ? <Kisah25NabiScreen setActiveTab={handleTabChange} />
                 : activeTab === 'tamyiz' ? <TamyizScreen setActiveTab={handleTabChange} />
-                : activeTab === 'amal' ? <AmalScreen setActiveTab={handleTabChange} />
+                : activeTab === 'amal' ? <AmalScreen setActiveTab={handleTabChange} currentUser={currentUser} />
                 : activeTab === 'dzikir' ? <DzikirScreen setActiveTab={handleTabChange} />
-                : activeTab === 'iqra' ? <IqraScreen setActiveTab={handleTabChange} />
+                : activeTab === 'iqra' ? <IqraScreen setActiveTab={handleTabChange} currentUser={currentUser} />
                 : activeTab === 'artikel' ? <ArtikelScreen setActiveTab={handleTabChange} />
                 : activeTab === 'renungan' ? <RenunganScreen setActiveTab={handleTabChange} />
                 : activeTab === 'doa' ? <DoaScreen setActiveTab={handleTabChange} />

@@ -38,7 +38,7 @@ const calculateSimilarity = (str1, str2) => {
 };
 // -------------------------------------
 
-const QuranScreen = () => {
+const QuranScreen = ({ currentUser }) => {
     const currentAudioRef = useRef(null);
 
     const playVerseAudio = (url) => {
@@ -75,11 +75,13 @@ const QuranScreen = () => {
     const [aiStats, setAiStats] = useState({ average: 0, sessions: 0 });
     
     useEffect(() => {
-        const storedStats = localStorage.getItem('aiReadingStats');
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const statsKey = userKey ? `aiReadingStats_${userKey}` : 'aiReadingStats';
+        const storedStats = localStorage.getItem(statsKey);
         if (storedStats) {
             setAiStats(JSON.parse(storedStats));
         }
-    }, []);
+    }, [currentUser]);
     
     // Setor Hafalan States
     const [setoranList, setoranListState] = useState([]);
@@ -90,9 +92,10 @@ const QuranScreen = () => {
     useEffect(() => {
         const loadSetoran = () => {
             const saved = localStorage.getItem('rqs_setoran_hafalan');
-            if (saved) {
+            if (saved && currentUser) {
                 const allSetoran = JSON.parse(saved);
-                setoranListState(allSetoran.filter(s => s.tholibah_name === 'Aisyah').sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)));
+                // Filter setoran list by the current user's name
+                setoranListState(allSetoran.filter(s => s.tholibah_name === currentUser.nama).sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)));
             }
         };
         loadSetoran();
@@ -110,7 +113,7 @@ const QuranScreen = () => {
         if (!targetHafalan.trim()) return alert("Isi target hafalan dulu (misal: Al-Mulk ayat 1-10)");
         const newSetoran = {
             id: Date.now().toString(),
-            tholibah_name: 'Aisyah',
+            tholibah_name: currentUser?.nama || 'Hamba Allah',
             status: 'menunggu',
             surat_target: targetHafalan,
             ustadz_name: '',
@@ -152,17 +155,20 @@ const QuranScreen = () => {
             
             let score = 0;
             if (wordsCount > 0) {
-                score = Math.round(((greenCount + (yellowCount * 0.5)) / wordsCount) * 100);
+                const overallScore = Math.round(((greenCount + (yellowCount * 0.5)) / wordsCount) * 100);
+                score = overallScore;
                 
-                // Simpan ke local storage untuk rata-rata progres
-                const currentStats = JSON.parse(localStorage.getItem('aiReadingStats')) || { average: 0, sessions: 0 };
+                // Simpan ke local storage untuk rata-rata progres                
+                const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+                const statsKey = userKey ? `aiReadingStats_${userKey}` : 'aiReadingStats';
+
+                const currentStats = JSON.parse(localStorage.getItem(statsKey)) || { average: 0, sessions: 0 };
                 const newSessions = currentStats.sessions + 1;
-                // Hitung rata-rata dengan 1 desimal (contoh: 72.6)
-                const newAverage = Number((((currentStats.average * currentStats.sessions) + score) / newSessions).toFixed(1));
+                const newAverage = Math.round(((currentStats.average * currentStats.sessions) + overallScore) / newSessions);
                 
                 const newStats = { average: newAverage, sessions: newSessions };
-                localStorage.setItem('aiReadingStats', JSON.stringify(newStats));
-                setAiStats(newStats); 
+                setAiStats(newStats);
+                localStorage.setItem(statsKey, JSON.stringify(newStats));
             }
             
             setIsAnalyzing(true);
@@ -327,7 +333,15 @@ const QuranScreen = () => {
     const [navPage, setNavPage] = useState(1);
     
     // Bookmark
-    const [bookmarks, setBookmarks] = useState({});
+    const [bookmarks, setBookmarks] = useState([]);
+    useEffect(() => {
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const bookmarksKey = userKey ? `rqs_bookmarks_${userKey}` : 'rqs_bookmarks';
+        const saved = localStorage.getItem(bookmarksKey);
+        if (saved) {
+            setBookmarks(JSON.parse(saved));
+        }
+    }, [currentUser]);
 
     const activeSurahRef = useRef(activeSurah);
 
@@ -344,10 +358,6 @@ const QuranScreen = () => {
             }
         };
         window.addEventListener('app-back-pressed', handleBack);
-        
-        // Load bookmarks
-        const saved = localStorage.getItem('rqs_bookmarks');
-        if(saved) setBookmarks(JSON.parse(saved));
         
         return () => window.removeEventListener('app-back-pressed', handleBack);
     }, []);
@@ -472,7 +482,9 @@ const QuranScreen = () => {
                 alert(`Disimpan: Surah ${activeSurah.name_simple} Ayat ${verse.verse_number}`);
             }
             
-            localStorage.setItem('rqs_bookmarks', JSON.stringify(updated));
+            const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+            const bookmarksKey = userKey ? `rqs_bookmarks_${userKey}` : 'rqs_bookmarks';
+            localStorage.setItem(bookmarksKey, JSON.stringify(updated));
             return updated;
         });
     };

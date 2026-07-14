@@ -1,24 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PhosphorIcon from './PhosphorIcon';
 
-const TasbihScreen = ({ setActiveTab }) => {
+const TasbihScreen = ({ setActiveTab, currentUser }) => {
     // States with synchronous localStorage initialization
     const [count, setCount] = useState(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('rqs_tasbih_count');
+            const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+            const countKey = userKey ? `rqs_tasbih_count_${userKey}` : 'rqs_tasbih_count';
+            const saved = localStorage.getItem(countKey);
             return saved !== null ? parseInt(saved, 10) : 0;
         }
         return 0;
     });
     const [mode, setMode] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('rqs_tasbih_mode') || 'sholat';
+            const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+            const modeKey = userKey ? `rqs_tasbih_mode_${userKey}` : 'rqs_tasbih_mode';
+            return localStorage.getItem(modeKey) || 'sholat';
         }
         return 'sholat';
     });
     const [customTarget, setCustomTarget] = useState(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('rqs_tasbih_custom_target');
+            const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+            const targetKey = userKey ? `rqs_tasbih_custom_target_${userKey}` : 'rqs_tasbih_custom_target';
+            const saved = localStorage.getItem(targetKey);
             return saved !== null ? parseInt(saved, 10) : 100;
         }
         return 100;
@@ -31,10 +37,15 @@ const TasbihScreen = ({ setActiveTab }) => {
 
     // Save to localStorage whenever states change
     useEffect(() => {
-        localStorage.setItem('rqs_tasbih_count', count.toString());
-        localStorage.setItem('rqs_tasbih_mode', mode);
-        localStorage.setItem('rqs_tasbih_custom_target', customTarget.toString());
-    }, [count, mode, customTarget]);
+        const userKey = currentUser ? (currentUser.username || currentUser.id) : '';
+        const countKey = userKey ? `rqs_tasbih_count_${userKey}` : 'rqs_tasbih_count';
+        const modeKey = userKey ? `rqs_tasbih_mode_${userKey}` : 'rqs_tasbih_mode';
+        const targetKey = userKey ? `rqs_tasbih_custom_target_${userKey}` : 'rqs_tasbih_custom_target';
+        
+        localStorage.setItem(countKey, count.toString());
+        localStorage.setItem(modeKey, mode);
+        localStorage.setItem(targetKey, customTarget.toString());
+    }, [count, mode, customTarget, currentUser]);
 
     // Vibration helper
     const vibrate = (pattern) => {

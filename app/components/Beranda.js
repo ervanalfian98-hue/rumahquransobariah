@@ -53,13 +53,15 @@ const BerandaScreen = ({ setActiveTab, currentUser }) => {
     }, []);
 
     useEffect(() => {
-        const saved = localStorage.getItem('rqs_pinned_menus');
+        if (!currentUser) return;
+        const storageKey = `rqs_pinned_menus_${currentUser.username || currentUser.id}`;
+        const saved = localStorage.getItem(storageKey);
         if (saved) {
             setPinnedMenus(JSON.parse(saved));
         } else {
             setPinnedMenus(QUICK_MENU.map(m => m.name));
         }
-    }, []);
+    }, [currentUser]);
 
     const displayedMenus = ALL_CATEGORIES.filter(item => pinnedMenus.includes(item.name));
     
@@ -67,8 +69,10 @@ const BerandaScreen = ({ setActiveTab, currentUser }) => {
     displayedMenus.sort((a, b) => pinnedMenus.indexOf(a.name) - pinnedMenus.indexOf(b.name));
 
     const handleSaveMenuSettings = () => {
+        if (!currentUser) return;
+        const storageKey = `rqs_pinned_menus_${currentUser.username || currentUser.id}`;
         setPinnedMenus(tempPinned);
-        localStorage.setItem('rqs_pinned_menus', JSON.stringify(tempPinned));
+        localStorage.setItem(storageKey, JSON.stringify(tempPinned));
         setIsMenuSettingsOpen(false);
     };
 
