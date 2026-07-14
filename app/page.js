@@ -39,6 +39,50 @@ export default function LoginScreen() {
         password: ''
     });
 
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                handleSupabaseSession(session);
+            }
+
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                if (session) {
+                    handleSupabaseSession(session);
+                }
+            });
+
+            return () => subscription.unsubscribe();
+        };
+
+        checkSession();
+    }, []);
+
+    const handleSupabaseSession = (session) => {
+        const email = session.user.email;
+        const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        const user = users.find(u => u.email === email);
+        
+        if (user) {
+            if (user.role === 'tholibah' && user.verified === false) {
+                alert("Akun Anda belum diverifikasi oleh Management RQS. Harap menunggu konfirmasi!");
+                supabase.auth.signOut();
+                return;
+            }
+            localStorage.setItem('rqs_currentUser', JSON.stringify(user));
+            router.push('/home');
+        } else {
+            // User authenticated with Google but not in our localStorage DB yet
+            setGoogleEmail(email);
+            setIsGoogleRegister(true);
+            setIsLogin(false);
+            
+            // Pre-fill name if available
+            const fullName = session.user.user_metadata?.full_name || '';
+            setFormData(prev => ({ ...prev, nama: prev.nama || fullName }));
+        }
+    };
+
     const handleRegisterSubmit = (e) => {
         e.preventDefault();
         
@@ -79,21 +123,34 @@ export default function LoginScreen() {
         
         if (registerType === 'tholibah') {
             alert("Pendaftaran berhasil! Akun Anda sedang dalam antrean verifikasi oleh Management RQS. Harap bersabar menunggu konfirmasi sebelum Anda bisa Login.");
+            if (isGoogleRegister) {
+                // Sign out of Supabase immediately so they don't get auto-logged in while unverified
+                supabase.auth.signOut();
+            }
+            // Reset form and go to login
+            setFormData({ nama: '', tempatLahir: '', tanggalLahir: '', username: '', phone: '', email: '', password: '', confirmPassword: '', kodeAkses: '' });
+            setIsGoogleRegister(false);
+            setIsLogin(true);
         } else {
-            alert("Pendaftaran Management berhasil! Silakan login untuk melanjutkan.");
+            alert("Pendaftaran Management berhasil!");
+            if (isGoogleRegister) {
+                // If management registered via Google, auto-login immediately
+                localStorage.setItem('rqs_currentUser', JSON.stringify(newUser));
+                router.push('/home');
+                return;
+            } else {
+                // Reset form and go to login for manual register
+                setFormData({ nama: '', tempatLahir: '', tanggalLahir: '', username: '', phone: '', email: '', password: '', confirmPassword: '', kodeAkses: '' });
+                setIsLogin(true);
+            }
         }
-        
-        // Reset form
-        setFormData({ nama: '', tempatLahir: '', tanggalLahir: '', username: '', phone: '', email: '', password: '', confirmPassword: '', kodeAkses: '' });
-        setIsGoogleRegister(false);
-        setIsLogin(true);
     };
 
     const handleGoogleRegisterInit = async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/home`
+                redirectTo: `${window.location.origin}`
             }
         });
         
@@ -125,7 +182,7 @@ export default function LoginScreen() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/home`
+                redirectTo: `${window.location.origin}`
             }
         });
         
