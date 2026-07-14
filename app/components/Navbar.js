@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const Navbar = ({ notifications = [], currentUser }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -84,7 +85,8 @@ const Navbar = ({ notifications = [], currentUser }) => {
                                 </button>
                                 <div className="h-px bg-slate-100 my-1"></div>
                                 <button 
-                                    onClick={() => {
+                                    onClick={async () => {
+                                        await supabase.auth.signOut();
                                         localStorage.removeItem('rqs_currentUser');
                                         window.location.href = '/';
                                     }}

@@ -40,6 +40,13 @@ export default function LoginScreen() {
     });
 
     useEffect(() => {
+        // Auto-redirect if already logged in
+        const existingUser = localStorage.getItem('rqs_currentUser');
+        if (existingUser) {
+            router.push('/home');
+            return;
+        }
+
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
