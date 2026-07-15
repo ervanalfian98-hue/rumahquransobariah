@@ -9,6 +9,7 @@ const KelolaPengajar = ({ onBack }) => {
     const [managementUsers, setManagementUsers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [classesList, setClassesList] = useState([]);
+    const [absensiList, setAbsensiList] = useState([]);
     
     // Form state
     const [editingId, setEditingId] = useState(null);
@@ -46,6 +47,14 @@ const KelolaPengajar = ({ onBack }) => {
         } else {
             setClassesList(INITIAL_CLASSES);
         }
+
+        // Load Absensi Pengajar
+        try {
+            const { data: absData } = await supabase.from('rqs_pengajar_absensi').select('*').order('date', { ascending: false });
+            if (absData) {
+                setAbsensiList(absData);
+            }
+        } catch(e) { console.error(e); }
     };
 
     useEffect(() => {
@@ -210,6 +219,48 @@ const KelolaPengajar = ({ onBack }) => {
                                         })}
                                     </div>
                                 </div>
+                                
+                                {/* ABSENSI STATS */}
+                                {(() => {
+                                    const teacherAbsen = absensiList.filter(a => p.classes.includes(a.class_id) && a.teacher_name.includes(p.name));
+                                    if (teacherAbsen.length === 0) return (
+                                        <div className="mt-3 bg-[#FCF7E8] rounded-xl p-3 border border-[#E8D2A6]/50">
+                                            <p className="text-[10px] font-bold text-[#B88A44] flex items-center gap-1">
+                                                <PhosphorIcon icon="calendar-x" size={14} /> Belum Ada Kehadiran
+                                            </p>
+                                        </div>
+                                    );
+                                    
+                                    // Get top 3 latest
+                                    const latest = teacherAbsen.slice(0, 3);
+                                    
+                                    return (
+                                        <div className="mt-3 bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-[10px] font-bold text-emerald-700 flex items-center gap-1">
+                                                    <PhosphorIcon icon="calendar-check" size={14} weight="fill" /> Total Hadir: {teacherAbsen.length}x
+                                                </p>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                {latest.map((abs, idx) => {
+                                                    const cName = getClassName(abs.class_id);
+                                                    return (
+                                                        <div key={idx} className="flex justify-between items-center text-[9px] bg-white px-2 py-1.5 rounded-lg border border-emerald-100/50">
+                                                            <span className="font-bold text-gray-700 truncate mr-2 flex-1">{cName}</span>
+                                                            <div className="text-right whitespace-nowrap">
+                                                                <span className="text-emerald-600 font-bold">{abs.date}</span>
+                                                                <span className="text-gray-400 ml-1">({abs.time_arrived})</span>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                                {teacherAbsen.length > 3 && (
+                                                    <p className="text-[9px] text-center text-emerald-600/70 pt-1 font-bold">+{teacherAbsen.length - 3} kehadiran lainnya</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                     </div>

@@ -251,12 +251,27 @@ const PendidikanScreen = ({ currentUser }) => {
         alert("Berhasil absen masuk di kelas ini.");
     };
 
-    const handleTeacherPresent = () => {
+    const handleTeacherPresent = async () => {
         const today = getLocalDateString();
         const currentTime = new Date().toTimeString().substring(0, 5);
         const newRecord = { ...teacherPresentRecord, [selectedClass.id]: currentTime };
         setTeacherPresentRecord(newRecord);
         localStorage.setItem(`rqs_teacher_present_${today}`, JSON.stringify(newRecord));
+
+        // Sync to Supabase for Management
+        const teacherName = getClassTeachers(selectedClass.id);
+        const record = {
+            class_id: selectedClass.id,
+            teacher_name: teacherName,
+            date: today,
+            time_arrived: currentTime,
+            recorded_by: currentUser?.id
+        };
+        try {
+            await supabase.from('rqs_pengajar_absensi').insert([record]);
+        } catch(e) {
+            console.error("Gagal menyimpan absen pengajar ke Supabase", e);
+        }
     };
 
     const handleKickStudent = (studentId) => {
