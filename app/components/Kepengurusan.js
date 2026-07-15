@@ -87,7 +87,7 @@ const Kepengurusan = ({ setActiveTab }) => {
                     <PhosphorIcon icon="arrow-left" size={24} />
                 </button>
                 <div className="flex-1 text-center pr-10">
-                    <h2 className="text-lg font-bold text-[#4A1C14] leading-tight">Kelola Pengurus</h2>
+                    <h2 className="text-lg font-bold text-[#4A1C14] leading-tight">Susunan Kepengurusan</h2>
                     <p className="text-[10px] text-indigo-600 font-bold">Struktur Management RQS</p>
                 </div>
             </div>
@@ -212,9 +212,6 @@ const Kepengurusan = ({ setActiveTab }) => {
                             <div className="flex flex-col items-center gap-4">
                                 {pimpinanList.map((p, idx) => (
                                     <div key={p.id} className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm flex flex-col items-center w-full max-w-[250px] relative overflow-hidden group">
-                                        <button onClick={() => handleDelete(p.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600 z-20 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white rounded-full shadow-sm">
-                                            <PhosphorIcon icon="trash" size={16} />
-                                        </button>
                                         <div className={`absolute top-0 w-full h-12 left-0 right-0 ${idx === 0 ? 'bg-indigo-50' : 'bg-gray-50'}`}></div>
                                         <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 z-10 border-4 border-white shadow-sm mb-2 ${idx === 0 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
                                             <PhosphorIcon icon={p.icon || 'user-circle'} size={32} weight="fill" />
@@ -251,9 +248,6 @@ const Kepengurusan = ({ setActiveTab }) => {
                                     
                                     return (
                                         <div key={d.id} className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 relative group">
-                                            <button onClick={() => handleDelete(d.id)} className="absolute -top-2 -right-2 text-red-400 hover:text-red-600 z-20 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white border shadow-sm rounded-full">
-                                                <PhosphorIcon icon="trash" size={14} />
-                                            </button>
                                             <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${theme.bg} ${theme.text}`}>
                                                 <PhosphorIcon icon={d.icon || 'users'} weight="fill" size={24} />
                                             </div>
@@ -264,6 +258,7 @@ const Kepengurusan = ({ setActiveTab }) => {
                                                     <PhosphorIcon icon="user-circle" />
                                                     <span className="truncate">{d.namaLengkap}</span>
                                                 </div>
+                                                <p className="text-[9px] text-gray-400 mt-1 truncate">Akun Terhubung: {managementUsers.find(u => u.id === d.userId)?.nama || '-'}</p>
                                             </div>
                                         </div>
                                     );

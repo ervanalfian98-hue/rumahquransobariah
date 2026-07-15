@@ -392,7 +392,54 @@ const KelolaKepengurusan = ({ onBack }) => {
                         ))}
                     </div>
                 )}
+
+                {/* Data Management Aktif */}
+                <div className="mt-8 mb-4">
+                    <h3 className="font-bold text-[#4A1C14] text-sm mb-3 border-b border-[#E8D2A6]/30 pb-2 flex items-center gap-2">
+                        <PhosphorIcon icon="users" size={18} className="text-[#B88A44]" />
+                        Data Management Aktif
+                    </h3>
+                    <div 
+                        onClick={() => setViewMode('all_management')}
+                        className="p-4 rounded-2xl shadow-sm border cursor-pointer hover:scale-[1.02] transition-transform bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 flex flex-col items-center justify-center text-center h-24 relative overflow-hidden"
+                    >
+                        <PhosphorIcon icon="users-three" size={40} className="opacity-10 absolute -right-2 -bottom-2 text-blue-700" />
+                        <h4 className="font-bold text-[14px] leading-tight mb-1 z-10 text-blue-800">Semua Management Aktif</h4>
+                        <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-md mt-1 z-10 border border-white/50">
+                            <span className="text-[11px] font-bold text-blue-700">{managementUsers.length} Akun Terdaftar</span>
+                        </div>
+                    </div>
+                </div>
             </motion.div>
+    );
+
+    const renderAllManagement = () => (
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="px-5 mt-4 pb-10">
+            <h3 className="font-bold text-[#4A1C14] mb-4">Semua Management Aktif</h3>
+            <div className="space-y-3">
+                {managementUsers.map(u => (
+                    <div key={u.id} className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                            {u.nama.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <h4 className="font-bold text-gray-800 text-sm truncate">{u.nama}</h4>
+                            <p className="text-[10px] text-gray-500 truncate">{u.email} | {u.phone}</p>
+                            {(() => {
+                                const pimpinan = pimpinanList.find(p => p.userId === u.id);
+                                const divisi = divisiList.find(d => d.userId === u.id);
+                                if (pimpinan) return <p className="text-[9px] font-bold text-indigo-600 mt-0.5 bg-indigo-50 px-1.5 py-0.5 rounded inline-block truncate max-w-full border border-indigo-100">{pimpinan.peran}</p>;
+                                if (divisi) return <p className="text-[9px] font-bold text-emerald-600 mt-0.5 bg-emerald-50 px-1.5 py-0.5 rounded inline-block truncate max-w-full border border-emerald-100">{divisi.peran}</p>;
+                                return <p className="text-[9px] text-gray-400 mt-0.5 border border-gray-100 px-1.5 py-0.5 rounded inline-block bg-gray-50">Belum menempati posisi</p>;
+                            })()}
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                            <button onClick={() => handleKelolaAkun(u)} className="px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">Kelola</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </motion.div>
     );
 
     const renderAbsenDetail = () => (
@@ -586,7 +633,7 @@ const KelolaKepengurusan = ({ onBack }) => {
                 <button 
                     onClick={() => {
                         if (viewMode === 'main') onBack();
-                        else if (viewMode === 'detail') setViewMode('main');
+                        else if (viewMode === 'detail' || viewMode === 'all_management') setViewMode('main');
                         else setViewMode('detail');
                     }} 
                     className="p-2 -ml-2 mr-2 text-[#4A1C14] hover:bg-[#FCF7E8] rounded-full transition-colors"
@@ -596,6 +643,7 @@ const KelolaKepengurusan = ({ onBack }) => {
                 <div className="flex-1">
                     <h2 className="text-lg font-bold text-[#4A1C14] leading-tight">
                         {viewMode === 'main' ? 'Kelola Kepengurusan' : 
+                         viewMode === 'all_management' ? 'Data Management' :
                          viewMode === 'detail' ? 'Kelola Akun' : 
                          viewMode === 'absen_detail' ? 'Detail Absensi' : 'Riwayat Setoran'}
                     </h2>
@@ -604,6 +652,7 @@ const KelolaKepengurusan = ({ onBack }) => {
 
             <AnimatePresence mode="wait">
                 {viewMode === 'main' && renderMainView()}
+                {viewMode === 'all_management' && renderAllManagement()}
                 {viewMode === 'detail' && renderManagementDetail()}
                 {viewMode === 'absen_detail' && renderAbsenDetail()}
                 {viewMode === 'setoran_detail' && renderSetoranDetail()}

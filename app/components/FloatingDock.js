@@ -13,7 +13,7 @@ const FloatingDock = ({ activeTab, setActiveTab, currentUser }) => {
     const isTholibah = currentUser?.role === 'tholibah';
 
     return (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[320px] h-[60px] flex justify-between z-50 gap-3">
+        <div className={`absolute bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-40px)] ${isTholibah ? 'max-w-[250px]' : 'max-w-[320px]'} h-[60px] flex justify-between z-50 gap-3`}>
             <div className="relative flex-1 bg-[#4A1C14] rounded-[30px] shadow-2xl shadow-[#4A1C14]/40 flex">
                 {activeIndex !== -1 && (
                     <div

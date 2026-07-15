@@ -14,9 +14,13 @@ const KELAS_LIST = [
 
 const Pengajar = ({ setActiveTab }) => {
     const [pengajarList, setPengajarList] = useState([]);
+    const [users, setUsers] = useState([]);
     const [selectedUstadz, setSelectedUstadz] = useState(null);
 
     const loadPengajar = () => {
+        const savedUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        setUsers(savedUsers);
+
         const saved = localStorage.getItem('rqs_pengajar');
         if (saved) {
             setPengajarList(JSON.parse(saved));
@@ -103,9 +107,17 @@ const Pengajar = ({ setActiveTab }) => {
                                 <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 mb-2 border-2 ${p.gender === 'ustadz' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-teal-50 border-teal-100 text-teal-600'} text-xl font-bold`}>
                                     {p.name.charAt(0).toUpperCase()}
                                 </div>
-                                <h4 className="font-bold text-gray-800 text-[13px] text-center leading-tight mb-2">
+                                <h4 className="font-bold text-gray-800 text-[13px] text-center leading-tight mb-1.5">
                                     {p.gender === 'ustadz' ? 'Ust. ' : 'Usth. '}{p.name}
                                 </h4>
+                                {p.userId ? (
+                                    <div className="text-[9px] text-teal-600 text-center mb-2 px-2 bg-teal-50 rounded-full py-0.5 border border-teal-100 flex items-center gap-1 justify-center max-w-[95%] w-full">
+                                        <PhosphorIcon icon="link" size={10} weight="bold" className="shrink-0" />
+                                        <span className="truncate font-bold">{users.find(u => u.id == p.userId)?.nama || users.find(u => u.id == p.userId)?.email || 'Akun tidak ditemukan'}</span>
+                                    </div>
+                                ) : (
+                                    <div className="mb-2"></div>
+                                )}
                                 <div className="w-full mt-auto flex flex-col gap-1.5 pt-2 border-t border-gray-100">
                                     {p.classes.map(id => (
                                         <div key={id} className="w-full bg-teal-50 border border-teal-100 text-teal-700 text-[9px] font-bold py-1.5 px-2 rounded-lg text-center leading-tight">
