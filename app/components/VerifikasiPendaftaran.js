@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const VerifikasiPendaftaran = ({ onBack }) => {
     const [pendingUsers, setPendingUsers] = useState([]);
@@ -8,13 +9,37 @@ const VerifikasiPendaftaran = ({ onBack }) => {
         loadPendingUsers();
     }, []);
 
-    const loadPendingUsers = () => {
-        const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const pending = users.filter(u => u.role === 'tholibah' && u.verified === false);
-        setPendingUsers(pending);
+    const loadPendingUsers = async () => {
+        // Ambil data terbaru langsung dari Supabase
+        const { data, error } = await supabase.from('profiles').select('*').eq('role', 'tholibah').eq('verified', false);
+        if (data) {
+            const formatted = data.map(u => ({
+                id: u.id,
+                nama: u.nama,
+                tempatLahir: u.tempat_lahir,
+                tanggalLahir: u.tanggal_lahir,
+                username: u.username,
+                phone: u.phone,
+                email: u.email,
+                role: u.role,
+                verified: u.verified
+            }));
+            setPendingUsers(formatted);
+        } else {
+            const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+            const pending = users.filter(u => u.role === 'tholibah' && u.verified === false);
+            setPendingUsers(pending);
+        }
     };
 
-    const handleVerify = (userId) => {
+    const handleVerify = async (userId) => {
+        const { error } = await supabase.from('profiles').update({ verified: true }).eq('id', userId);
+        if (error) {
+            console.error(error);
+            return alert("Gagal memverifikasi akun di server Supabase.");
+        }
+        
+        // Update local storage so other components know it's verified too
         const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
         const updatedUsers = users.map(u => {
             if (u.id === userId) {
@@ -28,12 +53,19 @@ const VerifikasiPendaftaran = ({ onBack }) => {
         loadPendingUsers();
     };
 
-    const handleReject = (userId) => {
+    const handleReject = async (userId) => {
         const confirmDelete = window.confirm("Apakah Anda yakin ingin menolak dan menghapus pendaftaran ini?");
         if (confirmDelete) {
+            const { error } = await supabase.from('profiles').delete().eq('id', userId);
+            if (error) {
+                console.error(error);
+                return alert("Gagal menghapus akun di server Supabase.");
+            }
+            
             const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
             const updatedUsers = users.filter(u => u.id !== userId);
             localStorage.setItem('rqs_users', JSON.stringify(updatedUsers));
+            
             loadPendingUsers();
         }
     };
