@@ -1,7 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES as INITIAL_CLASSES } from './MockData';
+
+const ClassItem = ({ cls, handleEdit, handleDelete }) => {
+    const controls = useDragControls();
+
+    return (
+        <Reorder.Item 
+            value={cls} 
+            dragListener={false} 
+            dragControls={controls} 
+            className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8D2A6]/50 relative overflow-hidden"
+        >
+            <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <div 
+                        className="text-gray-300 cursor-grab active:cursor-grabbing py-2 pr-2 -ml-1 touch-none"
+                        onPointerDown={(e) => controls.start(e)}
+                    >
+                        <PhosphorIcon icon="dots-six-vertical" size={24} weight="bold" />
+                    </div>
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-sm shrink-0 ${cls.color.split(' ')[0]} ${cls.color.split(' ')[1]}`}>
+                        <PhosphorIcon icon="book-open" size={20} weight="duotone" className="sm:w-6 sm:h-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-[#4A1C14] text-[14px] sm:text-[15px]">{cls.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[9px] font-bold bg-[#FCF7E8] text-[#B88A44] px-2 py-0.5 rounded uppercase tracking-wider">
+                                Tingkat: {cls.tingkatan || 'Dasar'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex gap-2 relative z-10">
+                    <button onClick={() => handleEdit(cls)} className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100">
+                        <PhosphorIcon icon="pencil-simple" size={14} />
+                    </button>
+                    <button onClick={() => handleDelete(cls.id)} className="w-7 h-7 sm:w-8 sm:h-8 bg-red-50 text-red-600 rounded-full flex items-center justify-center hover:bg-red-100">
+                        <PhosphorIcon icon="trash" size={14} />
+                    </button>
+                </div>
+            </div>
+            <p className="text-[11px] text-[#4A1C14]/70 mt-2 pl-[3.25rem] sm:pl-[4.5rem]">{cls.desc}</p>
+        </Reorder.Item>
+    );
+};
 
 const KelolaKelas = ({ onBack }) => {
     const [classes, setClasses] = useState([]);
@@ -121,35 +165,7 @@ const KelolaKelas = ({ onBack }) => {
             <div className="p-5">
                 <Reorder.Group axis="y" values={classes} onReorder={handleReorder} className="space-y-4">
                     {classes.map(cls => (
-                        <Reorder.Item key={cls.id} value={cls} className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8D2A6]/50 relative overflow-hidden cursor-grab active:cursor-grabbing">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="flex items-center gap-3">
-                                    <div className="text-gray-300">
-                                        <PhosphorIcon icon="dots-six-vertical" size={24} weight="bold" />
-                                    </div>
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${cls.color.split(' ')[0]} ${cls.color.split(' ')[1]}`}>
-                                        <PhosphorIcon icon="book-open" size={24} weight="duotone" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-[#4A1C14] text-[15px]">{cls.name}</h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-[9px] font-bold bg-[#FCF7E8] text-[#B88A44] px-2 py-0.5 rounded uppercase tracking-wider">
-                                                Tingkat: {cls.tingkatan || 'Dasar'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 relative z-10" onPointerDown={(e) => e.stopPropagation()}>
-                                    <button onClick={() => handleEdit(cls)} className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100">
-                                        <PhosphorIcon icon="pencil-simple" size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(cls.id)} className="w-8 h-8 bg-red-50 text-red-600 rounded-full flex items-center justify-center hover:bg-red-100">
-                                        <PhosphorIcon icon="trash" size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                            <p className="text-[11px] text-[#4A1C14]/70 mt-2 pl-9">{cls.desc}</p>
-                        </Reorder.Item>
+                        <ClassItem key={cls.id} cls={cls} handleEdit={handleEdit} handleDelete={handleDelete} />
                     ))}
                     
                     {classes.length === 0 && (
