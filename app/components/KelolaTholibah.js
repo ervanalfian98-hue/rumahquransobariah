@@ -66,9 +66,10 @@ const KelolaTholibah = ({ onBack }) => {
 
             if (hasNew) {
                 const toUpsert = updatedList.map(t => ({
-                    id: t.id, name: t.name, phone: t.phone, email: t.email, classes: t.classes, joined: t.joined, tanggal_lahir: t.tanggalLahir, tempat_lahir: t.tempatLahir, role: t.role
+                    id: t.id, name: t.name, phone: t.phone, classes: t.classes, joined: t.joined, role: t.role
                 }));
-                await supabase.from('rqs_tholibah').upsert(toUpsert);
+                const { error } = await supabase.from('rqs_tholibah').upsert(toUpsert);
+                if (error) console.error("Error upserting new tholibah:", error);
             }
             setTholibahList(updatedList);
         };
@@ -148,9 +149,13 @@ const KelolaTholibah = ({ onBack }) => {
     const saveTholibah = async (newList) => {
         setTholibahList(newList);
         const toUpsert = newList.map(t => ({
-            id: t.id, name: t.name, phone: t.phone, email: t.email, classes: t.classes, joined: t.joined, tanggal_lahir: t.tanggalLahir, tempat_lahir: t.tempatLahir, role: t.role
+            id: t.id, name: t.name, phone: t.phone, classes: t.classes, joined: t.joined, role: t.role
         }));
-        await supabase.from('rqs_tholibah').upsert(toUpsert);
+        const { error } = await supabase.from('rqs_tholibah').upsert(toUpsert);
+        if (error) {
+            console.error("Error saving tholibah classes:", error);
+            alert("Gagal menyimpan ke Supabase!");
+        }
         window.dispatchEvent(new Event('rqs-tholibah-updated'));
     };
 
