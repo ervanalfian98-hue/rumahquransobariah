@@ -129,10 +129,15 @@ const BerandaScreen = ({ setActiveTab, currentUser }) => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [showAllPengumuman, setShowAllPengumuman] = useState(false);
 
-    const loadTentangData = () => {
-        const savedData = localStorage.getItem('rqs_tentang_content');
-        if (savedData) {
-            setTentangData(JSON.parse(savedData));
+    const loadTentangData = async () => {
+        const { data, error } = await supabase.from('rqs_tentang').select('*').eq('id', 1).single();
+        if (data && !error) {
+            setTentangData({
+                visi: data.visi || defaultTentangData.visi,
+                misi: data.misi || defaultTentangData.misi,
+                latarBelakang: data.latarBelakang || defaultTentangData.latarBelakang,
+                budaya: data.budaya || defaultTentangData.budaya
+            });
         }
     };
 

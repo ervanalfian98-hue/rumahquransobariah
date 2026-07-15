@@ -12,21 +12,29 @@ const RiwayatAbsensi = ({ currentUser, setActiveTab }) => {
             if (!currentUser) return;
             
             // Load Absensi
-            const jadwalData = JSON.parse(localStorage.getItem('rqs_jadwal') || '[]');
             const myAbsensi = [];
-            jadwalData.forEach(j => {
-                if (j.absensi && Array.isArray(j.absensi)) {
-                    const record = j.absensi.find(a => a.tholibahId === currentUser.id || a.id === currentUser.id);
-                    if (record) {
-                        myAbsensi.push({
-                            ...record,
-                            tanggal: j.tanggal,
-                            namaKelas: j.namaKelas,
-                            waktuSelesai: j.waktuSelesai
-                        });
-                    }
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('rqs_absen_')) {
+                    const date = key.replace('rqs_absen_', '');
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data[currentUser.id]) {
+                            const userAbsen = data[currentUser.id];
+                            const isHadir = Array.isArray(userAbsen) ? userAbsen.length > 0 : !!userAbsen;
+                            if (isHadir) {
+                                if (Array.isArray(userAbsen)) {
+                                    userAbsen.forEach(classId => {
+                                        myAbsensi.push({ tanggal: date, namaKelas: classId });
+                                    });
+                                } else {
+                                    myAbsensi.push({ tanggal: date, namaKelas: userAbsen });
+                                }
+                            }
+                        }
+                    } catch(e) {}
                 }
-            });
+            }
             myAbsensi.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
             setAbsensiHistory(myAbsensi);
 
@@ -111,8 +119,8 @@ const RiwayatAbsensi = ({ currentUser, setActiveTab }) => {
                             <div key={i} className={`bg-white p-4 rounded-2xl border shadow-sm ${s.status === 'selesai' ? 'border-emerald-200' : 'border-amber-200'}`}>
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
-                                        <h4 className="font-bold text-gray-800 text-sm">{s.surah}</h4>
-                                        <p className="text-[10px] text-gray-500">Ayat: {s.ayat}</p>
+                                        <h4 className="font-bold text-gray-800 text-sm">{s.surat_target}</h4>
+                                        <p className="text-[10px] text-gray-500">Ayat: {s.ayat_target}</p>
                                     </div>
                                     <span className={`text-[9px] font-bold px-2 py-1 rounded-full ${
                                         s.status === 'selesai' ? 'bg-emerald-50 text-emerald-600' :

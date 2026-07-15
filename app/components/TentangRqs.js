@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const defaultData = {
     visi: "Menjadi lembaga pendidikan Al-Qur'an terdepan yang mencetak generasi Qur'ani, berakhlak mulia, dan berdaya guna bagi umat.",
@@ -13,10 +14,18 @@ const TentangRqs = ({ onBack }) => {
     const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
-        const savedData = localStorage.getItem('rqs_tentang_content');
-        if (savedData) {
-            setFormData(JSON.parse(savedData));
-        }
+        const fetchTentang = async () => {
+            const { data, error } = await supabase.from('rqs_tentang').select('*').eq('id', 1).single();
+            if (data && !error) {
+                setFormData({
+                    visi: data.visi || defaultData.visi,
+                    misi: data.misi || defaultData.misi,
+                    latarBelakang: data.latarBelakang || defaultData.latarBelakang,
+                    budaya: data.budaya || defaultData.budaya
+                });
+            }
+        };
+        fetchTentang();
     }, []);
 
     const handleChange = (e) => {
@@ -24,8 +33,22 @@ const TentangRqs = ({ onBack }) => {
         setIsSaved(false);
     }
 
-    const handleSave = () => {
-        localStorage.setItem('rqs_tentang_content', JSON.stringify(formData));
+    const handleSave = async () => {
+        const payload = {
+            id: 1,
+            visi: formData.visi,
+            misi: formData.misi,
+            latarBelakang: formData.latarBelakang,
+            budaya: formData.budaya
+        };
+        const { error } = await supabase.from('rqs_tentang').upsert([payload]);
+        
+        if (error) {
+            console.error('Error saving:', error);
+            alert('Gagal menyimpan data.');
+            return;
+        }
+
         setIsSaved(true);
         window.dispatchEvent(new Event('rqs-content-updated'));
         setTimeout(() => setIsSaved(false), 3000);

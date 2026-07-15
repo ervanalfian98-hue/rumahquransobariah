@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const KelolaRenungan = ({ onBack }) => {
     const [renunganList, setRenunganList] = useState([]);
@@ -13,10 +14,13 @@ const KelolaRenungan = ({ onBack }) => {
     const [newDate, setNewDate] = useState('');
 
     useEffect(() => {
-        const stored = localStorage.getItem('rqs_renungan');
-        if (stored) {
-            setRenunganList(JSON.parse(stored));
-        }
+        const fetchRenungan = async () => {
+            const { data, error } = await supabase.from('rqs_renungan').select('*').order('created_at', { ascending: false });
+            if (data && !error) {
+                setRenunganList(data);
+            }
+        };
+        fetchRenungan();
     }, []);
 
     const openAddForm = () => {
@@ -37,44 +41,54 @@ const KelolaRenungan = ({ onBack }) => {
         setIsFormOpen(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!newTitle || !newExcerpt || !newContent || !newDate) {
             alert("Harap lengkapi semua bidang!");
             return;
         }
 
-        let updatedList = [];
+        const payload = {
+            title: newTitle,
+            excerpt: newExcerpt,
+            content: newContent,
+            date: newDate
+        };
+
         if (editingId) {
             // Edit existing item
-            updatedList = renunganList.map(item => 
-                item.id === editingId 
-                    ? { ...item, title: newTitle, excerpt: newExcerpt, content: newContent, date: newDate }
-                    : item
-            );
+            const { error } = await supabase.from('rqs_renungan').update(payload).eq('id', editingId);
+            if (error) {
+                console.error(error);
+                alert('Gagal mengupdate renungan.');
+                return;
+            }
+            setRenunganList(renunganList.map(item => item.id === editingId ? { ...item, ...payload } : item));
         } else {
             // Create new item
-            const newItem = {
-                id: Date.now(),
-                title: newTitle,
-                excerpt: newExcerpt,
-                content: newContent,
-                date: newDate
-            };
-            updatedList = [newItem, ...renunganList];
+            const { data, error } = await supabase.from('rqs_renungan').insert([payload]).select();
+            if (error) {
+                console.error(error);
+                alert('Gagal menambah renungan.');
+                return;
+            }
+            if (data) {
+                setRenunganList([data[0], ...renunganList]);
+            }
         }
 
-        setRenunganList(updatedList);
-        localStorage.setItem('rqs_renungan', JSON.stringify(updatedList));
-        
         setIsFormOpen(false);
         setEditingId(null);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm("Apakah Anda yakin ingin menghapus renungan ini?")) {
-            const updatedList = renunganList.filter(item => item.id !== id);
-            setRenunganList(updatedList);
-            localStorage.setItem('rqs_renungan', JSON.stringify(updatedList));
+            const { error } = await supabase.from('rqs_renungan').delete().eq('id', id);
+            if (error) {
+                console.error(error);
+                alert('Gagal menghapus renungan.');
+                return;
+            }
+            setRenunganList(renunganList.filter(item => item.id !== id));
         }
     };
 

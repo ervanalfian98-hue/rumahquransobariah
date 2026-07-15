@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import html2canvas from 'html2canvas';
+import { supabase } from '../lib/supabaseClient';
 
 const Renungan = ({ setActiveTab }) => {
     const [renunganList, setRenunganList] = useState([]);
@@ -10,30 +11,13 @@ const Renungan = ({ setActiveTab }) => {
     const downloadRef = useRef(null);
 
     useEffect(() => {
-        const stored = localStorage.getItem('rqs_renungan');
-        if (stored) {
-            setRenunganList(JSON.parse(stored));
-        } else {
-            // Initial dummy data
-            const initialData = [
-                {
-                    id: 1,
-                    title: "Mensyukuri Nikmat Sehat",
-                    excerpt: "Kesehatan adalah mahkota di kepala orang sehat, yang hanya bisa dilihat oleh orang sakit.",
-                    content: "Seringkali kita melupakan nikmat sehat sampai rasa sakit menghampiri. Mari renungkan sejenak: tubuh yang bisa bergerak bebas, napas yang teratur tanpa alat bantu, dan mata yang masih bisa melihat keindahan ciptaan-Nya. Jangan tunggu kehilangan untuk mulai bersyukur. Gunakanlah nikmat sehat untuk mendekatkan diri kepada Allah SWT.",
-                    date: "10 Muharram 1445 H"
-                },
-                {
-                    id: 2,
-                    title: "Ujian Adalah Tanda Cinta",
-                    excerpt: "Jika Allah mencintai seorang hamba, maka Dia akan mengujinya.",
-                    content: "Setiap musibah yang datang bukan berarti Allah benci, melainkan cara Allah untuk mengangkat derajat kita dan menghapus dosa-dosa kita. Ketika ujian terasa berat, ingatlah bahwa Allah tidak akan membebani seseorang melainkan sesuai dengan kesanggupannya. Bersabarlah, karena di balik kesulitan pasti ada kemudahan.",
-                    date: "09 Muharram 1445 H"
-                }
-            ];
-            setRenunganList(initialData);
-            localStorage.setItem('rqs_renungan', JSON.stringify(initialData));
-        }
+        const fetchRenungan = async () => {
+            const { data, error } = await supabase.from('rqs_renungan').select('*').order('created_at', { ascending: false });
+            if (data && !error) {
+                setRenunganList(data);
+            }
+        };
+        fetchRenungan();
     }, []);
 
     const handleProcessImage = async (item, action) => {
