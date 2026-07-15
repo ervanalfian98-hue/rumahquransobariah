@@ -5,16 +5,14 @@ const supabaseKey = 'sb_publishable_BRlStpigfge6NxTdNS5nZg_5ycBtUHB';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function test() {
-    const newPengurus = {
-        type: 'pimpinan',
-        nama_lengkap: 'Testing',
-        user_id: null,
-        peran: 'Tester',
-        deskripsi: 'Test',
-        icon: 'user'
-    };
-    const { data, error } = await supabase.from('rqs_kepengurusan').insert([newPengurus]).select();
-    console.log('insert test:', { error, data });
+    const { data, error } = await supabase.from('rqs_setoran_hafalan').insert([{
+        tholibah_id: '123e4567-e89b-12d3-a456-426614174000',
+        surat_target: 'Test',
+        ayat_target: '1-10',
+        status: 'menunggu',
+        tanggal: new Date().toISOString()
+    }]).select();
+    console.log('rqs_setoran_hafalan tholibah insert:', { data, error });
 }
 
 test();

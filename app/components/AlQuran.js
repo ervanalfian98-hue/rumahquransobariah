@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
-
+import { supabase } from '../lib/supabaseClient';
 const stripHtml = (html) => html?.replace(/<[^>]*>?/gm, '') || '';
 
 export const playWordAudio = (audioPath) => {
@@ -90,12 +90,12 @@ const QuranScreen = ({ currentUser }) => {
     const [targetHafalan, setTargetHafalan] = useState('');
 
     useEffect(() => {
-        const loadSetoran = () => {
-            const saved = localStorage.getItem('rqs_setoran_hafalan');
-            if (saved && currentUser) {
-                const allSetoran = JSON.parse(saved);
-                // Filter setoran list by the current user's name
-                setoranListState(allSetoran.filter(s => s.tholibah_name === currentUser.nama).sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)));
+        const loadSetoran = async () => {
+            if (currentUser) {
+                const { data } = await supabase.from('rqs_setoran_hafalan').select('*').eq('tholibah_id', currentUser.id).order('tanggal', { ascending: false });
+                if (data) {
+                    setoranListState(data);
+                }
             }
         };
         loadSetoran();
@@ -109,20 +109,32 @@ const QuranScreen = ({ currentUser }) => {
 
     const activeSetoran = setoranList.find(s => s.status === 'menunggu' || s.status === 'disimak');
 
-    const handleSetor = () => {
+    const handleSetor = async () => {
         if (!targetHafalan.trim()) return alert("Isi target hafalan dulu (misal: Al-Mulk ayat 1-10)");
+        
+        let surat = targetHafalan;
+        let ayat = '';
+        if (targetHafalan.toLowerCase().includes('ayat')) {
+            const parts = targetHafalan.toLowerCase().split('ayat');
+            surat = parts[0].trim();
+            ayat = parts[1].trim();
+        }
+
         const newSetoran = {
-            id: Date.now().toString(),
-            tholibah_name: currentUser?.nama || 'Hamba Allah',
+            tholibah_id: currentUser?.id,
             status: 'menunggu',
-            surat_target: targetHafalan,
-            ustadz_name: '',
-            catatan: '',
+            surat_target: surat,
+            ayat_target: ayat,
             tanggal: new Date().toISOString()
         };
-        const saved = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        saved.push(newSetoran);
-        localStorage.setItem('rqs_setoran_hafalan', JSON.stringify(saved));
+
+        const { error } = await supabase.from('rqs_setoran_hafalan').insert([newSetoran]);
+        
+        if (error) {
+            console.error(error);
+            return alert("Gagal mengirim setoran.");
+        }
+
         window.dispatchEvent(new Event('rqs-setoran-updated'));
         setIsSetorModalOpen(false);
         setTargetHafalan('');

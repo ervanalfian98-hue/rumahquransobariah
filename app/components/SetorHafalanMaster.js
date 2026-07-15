@@ -9,9 +9,18 @@ const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
     const [catatan, setCatatan] = useState('');
 
     const loadSetoran = async () => {
-        const { data } = await supabase.from('rqs_setoran_hafalan').select('*').order('tanggal', { ascending: false });
-        if (data) {
-            setSetoranList(data);
+        const { data: setoranData } = await supabase.from('rqs_setoran_hafalan').select('*').order('tanggal', { ascending: false });
+        const { data: profilesData } = await supabase.from('profiles').select('id, nama');
+        
+        if (setoranData) {
+            const enrichedData = setoranData.map(s => {
+                const profile = profilesData?.find(p => p.id === s.tholibah_id || p.id === s.user_id);
+                return {
+                    ...s,
+                    tholibah_name: profile ? profile.nama : 'Unknown'
+                };
+            });
+            setSetoranList(enrichedData);
         }
     };
 
