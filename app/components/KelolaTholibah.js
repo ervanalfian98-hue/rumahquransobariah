@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES } from './MockData';
+import { supabase } from '../lib/supabaseClient';
 
 const KelolaTholibah = ({ onBack }) => {
     const [tholibahList, setTholibahList] = useState([]);
@@ -174,13 +175,20 @@ const KelolaTholibah = ({ onBack }) => {
         alert(`${selectedStudent.name} berhasil diubah menjadi Alumni.`);
     };
 
-    const handlePermanentDelete = () => {
+    const handlePermanentDelete = async () => {
         if (!selectedStudent) return;
         if (!window.confirm(`PERINGATAN 1: Apakah Anda yakin ingin MENGHAPUS PERMANEN akun ${selectedStudent.name}?`)) return;
         if (!window.confirm(`PERINGATAN 2: Tindakan ini tidak bisa dibatalkan! Semua data absen, setoran, dan progress akun ${selectedStudent.name} akan musnah sampai ke akarnya. Lanjutkan?`)) return;
 
         const targetId = selectedStudent.id;
         const targetName = selectedStudent.name;
+
+        // Delete from Supabase Database
+        const { error } = await supabase.from('profiles').delete().eq('id', targetId);
+        if (error) {
+            console.error(error);
+            return alert("Gagal menghapus akun secara permanen dari server Supabase.");
+        }
 
         // Remove from rqs_users
         let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
