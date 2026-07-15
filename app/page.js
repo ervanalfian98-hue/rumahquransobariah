@@ -71,7 +71,7 @@ export default function LoginScreen() {
     const syncUsersFromSupabase = async () => {
         const { data, error } = await supabase.from('profiles').select('*');
         if (data) {
-            // Map to localStorage format so all other components using rqs_users don't break
+            // Overwrite localStorage entirely with Supabase data (Clean slate)
             const formattedUsers = data.map(u => ({
                 id: u.id,
                 nama: u.nama,
@@ -88,7 +88,7 @@ export default function LoginScreen() {
             localStorage.setItem('rqs_users', JSON.stringify(formattedUsers));
             return formattedUsers;
         }
-        return JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        return [];
     };
 
     const handleSupabaseSession = async (session) => {
@@ -139,17 +139,7 @@ export default function LoginScreen() {
             return alert("Username atau Email sudah terdaftar!");
         }
         
-        // Generate an ID for the new user, ideally Supabase UUID, but we use Date.now() for manual register to avoid needing a uuid generator on client
-        let userId = Date.now().toString();
-        if (isGoogleRegister) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                userId = session.user.id;
-            }
-        }
-        
         const newUserToInsert = {
-            id: userId,
             nama: formData.nama,
             tempat_lahir: formData.tempatLahir,
             tanggal_lahir: formData.tanggalLahir,
@@ -162,7 +152,14 @@ export default function LoginScreen() {
             verified: registerType === 'management'
         };
         
-        const { error } = await supabase.from('profiles').insert([newUserToInsert]);
+        if (isGoogleRegister) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                newUserToInsert.id = session.user.id;
+            }
+        }
+        
+        const { data: insertedData, error } = await supabase.from('profiles').insert([newUserToInsert]).select();
         
         if (error) {
             console.error(error);
@@ -172,18 +169,20 @@ export default function LoginScreen() {
         // Sync local storage
         await syncUsersFromSupabase();
         
+        const insertedUser = insertedData?.[0] || newUserToInsert;
+        
         const newUserForLocal = {
-            id: userId,
-            nama: formData.nama,
-            tempatLahir: formData.tempatLahir,
-            tanggalLahir: formData.tanggalLahir,
-            username: formData.username,
-            phone: formData.phone,
-            email: finalEmail,
-            password: formData.password,
-            role: registerType,
-            isGoogle: isGoogleRegister,
-            verified: registerType === 'management'
+            id: insertedUser.id,
+            nama: insertedUser.nama,
+            tempatLahir: insertedUser.tempat_lahir,
+            tanggalLahir: insertedUser.tanggal_lahir,
+            username: insertedUser.username,
+            phone: insertedUser.phone,
+            email: insertedUser.email,
+            password: insertedUser.password,
+            role: insertedUser.role,
+            isGoogle: insertedUser.is_google,
+            verified: insertedUser.verified
         };
         
         if (registerType === 'tholibah') {
