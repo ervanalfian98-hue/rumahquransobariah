@@ -35,8 +35,15 @@ const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
     }, []);
 
     const updateStatus = async (id, newStatus, catatanTeks = '') => {
+        const currentUserStr = localStorage.getItem('rqs_currentUser');
+        let currentUstadzName = 'Ustadz/ah';
+        if (currentUserStr) {
+            currentUstadzName = JSON.parse(currentUserStr).nama;
+        }
+
         const updateData = {
             status: newStatus,
+            ustadz_name: currentUstadzName
         };
         if (catatanTeks) updateData.catatan = catatanTeks;
 

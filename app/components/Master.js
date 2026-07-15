@@ -209,6 +209,15 @@ const MasterScreen = () => {
                         <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Atur nama kelas, tingkatan, dan hapus/tambah kelas baru</p>
                     </div>
 
+                    {/* Card 9: Setor Hafalan */}
+                    <div onClick={() => handleMenuClick('setorHafalan')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
+                            <PhosphorIcon icon="microphone-stage" size={28} />
+                        </div>
+                        <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Setor Hafalan</h4>
+                        <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Simak dan beri catatan hafalan para tholibah</p>
+                    </div>
+
                     {/* Card 4 */}
                     <div onClick={() => handleMenuClick('keuangan')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
                         <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
@@ -272,14 +281,7 @@ const MasterScreen = () => {
                         <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Upload atau hapus foto untuk galeri dokumentasi kegiatan</p>
                     </div>
 
-                    {/* Card 9: Setor Hafalan */}
-                    <div onClick={() => handleMenuClick('setorHafalan')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
-                            <PhosphorIcon icon="microphone-stage" size={28} />
-                        </div>
-                        <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Setor Hafalan</h4>
-                        <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Simak dan beri catatan hafalan para tholibah</p>
-                    </div>
+
 
 
 
