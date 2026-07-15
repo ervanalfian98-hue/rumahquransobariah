@@ -180,19 +180,26 @@ const KelolaTholibah = ({ onBack }) => {
         if (!window.confirm(`PERINGATAN 1: Apakah Anda yakin ingin MENGHAPUS PERMANEN akun ${selectedStudent.name}?`)) return;
         if (!window.confirm(`PERINGATAN 2: Tindakan ini tidak bisa dibatalkan! Semua data absen, setoran, dan progress akun ${selectedStudent.name} akan musnah sampai ke akarnya. Lanjutkan?`)) return;
 
-        const targetId = selectedStudent.id;
-        const targetName = selectedStudent.name;
+        let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        
+        // Coba cari ID asli dari rqs_users untuk memastikan ID-nya akurat dengan Supabase
+        const actualUser = allUsers.find(u => u.id === selectedStudent.id || u.nama === selectedStudent.name || u.phone === selectedStudent.phone);
+        const finalDeleteId = actualUser ? actualUser.id : selectedStudent.id;
 
         // Delete from Supabase Database
-        const { error } = await supabase.from('profiles').delete().eq('id', targetId);
+        const { error, count } = await supabase.from('profiles').delete().eq('id', finalDeleteId).select();
+        
         if (error) {
             console.error(error);
             return alert("Gagal menghapus akun secara permanen dari server Supabase.");
         }
+        
+        if (count === 0 && !actualUser) {
+            console.warn("User tidak ditemukan di Supabase, tapi akan dihapus dari memori lokal.");
+        }
 
         // Remove from rqs_users
-        let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        allUsers = allUsers.filter(u => u.id !== targetId);
+        allUsers = allUsers.filter(u => u.id !== finalDeleteId);
         localStorage.setItem('rqs_users', JSON.stringify(allUsers));
 
         // Remove from rqs_tholibah
