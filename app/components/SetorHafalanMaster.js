@@ -37,7 +37,6 @@ const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
     const updateStatus = async (id, newStatus, catatanTeks = '') => {
         const updateData = {
             status: newStatus,
-            ustadz_name: ustadzName
         };
         if (catatanTeks) updateData.catatan = catatanTeks;
 
