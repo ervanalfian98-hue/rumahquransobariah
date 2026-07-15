@@ -83,7 +83,8 @@ export default function LoginScreen() {
                 password: u.password,
                 role: u.role,
                 isGoogle: u.is_google,
-                verified: u.verified
+                verified: u.verified,
+                avatarData: u.avatar_url
             }));
             localStorage.setItem('rqs_users', JSON.stringify(formattedUsers));
             return formattedUsers;
@@ -199,7 +200,8 @@ export default function LoginScreen() {
             password: insertedUser.password,
             role: insertedUser.role,
             isGoogle: insertedUser.is_google,
-            verified: insertedUser.verified
+            verified: insertedUser.verified,
+            avatarData: insertedUser.avatar_url
         };
         
         if (registerType === 'tholibah') {

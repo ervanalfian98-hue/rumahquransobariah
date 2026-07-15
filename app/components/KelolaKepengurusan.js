@@ -485,10 +485,10 @@ const KelolaKepengurusan = ({ onBack }) => {
                     <div className="absolute top-0 left-0 w-full h-16 bg-[#4A1C14]"></div>
                     <div className="relative z-10 flex flex-col items-center mt-4">
                         <div className="w-20 h-20 bg-white border-4 border-white rounded-full shadow-md flex items-center justify-center text-3xl font-bold text-[#4A1C14] bg-gradient-to-br from-[#FCF7E8] to-[#E8D2A6] overflow-hidden">
-                            {selectedManagement.avatarData ? (
-                                <img src={selectedManagement.avatarData} className="w-full h-full object-cover" alt="Profile" />
+                            {selectedManagement.avatarData || selectedManagement.avatar_url ? (
+                                <img src={selectedManagement.avatarData || selectedManagement.avatar_url} className="w-full h-full object-cover" alt="Profile" />
                             ) : (
-                                selectedManagement.nama.charAt(0)
+                                <span className="text-xl font-bold uppercase">{selectedManagement.nama?.charAt(0) || 'U'}</span>
                             )}
                         </div>
                         <h3 className="font-bold text-[#4A1C14] text-lg mt-3">{selectedManagement.nama}</h3>

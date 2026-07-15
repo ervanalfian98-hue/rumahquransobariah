@@ -39,7 +39,8 @@ const KelolaTholibah = ({ onBack }) => {
                         joined: new Date().toISOString().split('T')[0],
                         tanggalLahir: u.tanggalLahir,
                         tempatLahir: u.tempatLahir,
-                        role: u.role
+                        role: u.role,
+                        avatar_url: u.avatar_url
                     });
                     hasNew = true;
                 } else {
@@ -58,6 +59,10 @@ const KelolaTholibah = ({ onBack }) => {
                     }
                     if (!exists.tanggalLahir && u.tanggalLahir) {
                         exists.tanggalLahir = u.tanggalLahir;
+                        changed = true;
+                    }
+                    if (exists.avatar_url !== u.avatar_url) {
+                        exists.avatar_url = u.avatar_url;
                         changed = true;
                     }
                     if (changed) hasNew = true;
