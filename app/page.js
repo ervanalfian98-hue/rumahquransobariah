@@ -51,12 +51,12 @@ export default function LoginScreen() {
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                handleSupabaseSession(session);
+                await handleSupabaseSession(session);
             }
 
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
                 if (session) {
-                    handleSupabaseSession(session);
+                    await handleSupabaseSession(session);
                 }
             });
 
@@ -64,11 +64,36 @@ export default function LoginScreen() {
         };
 
         checkSession();
+        // Also fetch and sync users on load just in case
+        syncUsersFromSupabase();
     }, []);
 
-    const handleSupabaseSession = (session) => {
+    const syncUsersFromSupabase = async () => {
+        const { data, error } = await supabase.from('profiles').select('*');
+        if (data) {
+            // Map to localStorage format so all other components using rqs_users don't break
+            const formattedUsers = data.map(u => ({
+                id: u.id,
+                nama: u.nama,
+                tempatLahir: u.tempat_lahir,
+                tanggalLahir: u.tanggal_lahir,
+                username: u.username,
+                phone: u.phone,
+                email: u.email,
+                password: u.password,
+                role: u.role,
+                isGoogle: u.is_google,
+                verified: u.verified
+            }));
+            localStorage.setItem('rqs_users', JSON.stringify(formattedUsers));
+            return formattedUsers;
+        }
+        return JSON.parse(localStorage.getItem('rqs_users') || '[]');
+    };
+
+    const handleSupabaseSession = async (session) => {
         const email = session.user.email;
-        const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        const users = await syncUsersFromSupabase();
         const user = users.find(u => u.email === email);
         
         if (user) {
@@ -80,7 +105,7 @@ export default function LoginScreen() {
             localStorage.setItem('rqs_currentUser', JSON.stringify(user));
             router.push('/home');
         } else {
-            // User authenticated with Google but not in our localStorage DB yet
+            // User authenticated with Google but not in our Supabase DB yet
             setGoogleEmail(email);
             setIsGoogleRegister(true);
             setIsLogin(false);
@@ -91,7 +116,7 @@ export default function LoginScreen() {
         }
     };
 
-    const handleRegisterSubmit = (e) => {
+    const handleRegisterSubmit = async (e) => {
         e.preventDefault();
         
         if (!isGoogleRegister) {
@@ -105,29 +130,61 @@ export default function LoginScreen() {
             return alert("Kode akses khusus management salah!");
         }
         
-        const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
         const finalEmail = isGoogleRegister ? googleEmail : formData.email;
+        
+        // Sync to get latest users before checking if exists
+        const users = await syncUsersFromSupabase();
         
         if (users.find(u => u.email === finalEmail || u.username === formData.username)) {
             return alert("Username atau Email sudah terdaftar!");
         }
         
-        const newUser = {
-            id: Date.now().toString(),
+        // Generate an ID for the new user, ideally Supabase UUID, but we use Date.now() for manual register to avoid needing a uuid generator on client
+        let userId = Date.now().toString();
+        if (isGoogleRegister) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                userId = session.user.id;
+            }
+        }
+        
+        const newUserToInsert = {
+            id: userId,
+            nama: formData.nama,
+            tempat_lahir: formData.tempatLahir,
+            tanggal_lahir: formData.tanggalLahir,
+            username: formData.username,
+            phone: formData.phone,
+            email: finalEmail,
+            password: formData.password, // Empty if Google
+            role: registerType,
+            is_google: isGoogleRegister,
+            verified: registerType === 'management'
+        };
+        
+        const { error } = await supabase.from('profiles').insert([newUserToInsert]);
+        
+        if (error) {
+            console.error(error);
+            return alert("Gagal mendaftar ke server Supabase. Pastikan tabel profiles sudah ada dan RLS dimatikan.");
+        }
+        
+        // Sync local storage
+        await syncUsersFromSupabase();
+        
+        const newUserForLocal = {
+            id: userId,
             nama: formData.nama,
             tempatLahir: formData.tempatLahir,
             tanggalLahir: formData.tanggalLahir,
             username: formData.username,
             phone: formData.phone,
             email: finalEmail,
-            password: formData.password, // Empty if Google
+            password: formData.password,
             role: registerType,
             isGoogle: isGoogleRegister,
             verified: registerType === 'management'
         };
-        
-        users.push(newUser);
-        localStorage.setItem('rqs_users', JSON.stringify(users));
         
         if (registerType === 'tholibah') {
             alert("Pendaftaran berhasil! Akun Anda sedang dalam antrean verifikasi oleh Management RQS. Harap bersabar menunggu konfirmasi sebelum Anda bisa Login.");
@@ -143,7 +200,7 @@ export default function LoginScreen() {
             alert("Pendaftaran Management berhasil!");
             if (isGoogleRegister) {
                 // If management registered via Google, auto-login immediately
-                localStorage.setItem('rqs_currentUser', JSON.stringify(newUser));
+                localStorage.setItem('rqs_currentUser', JSON.stringify(newUserForLocal));
                 router.push('/home');
                 return;
             } else {
@@ -168,11 +225,11 @@ export default function LoginScreen() {
         }
     };
 
-    const handleLoginSubmit = (e) => {
+    const handleLoginSubmit = async (e) => {
         e.preventDefault();
         
-        // Bypass for mock user logic (from previous agents) if needed, but we will enforce strict checking
-        const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        // Update local users from Supabase before logging in to ensure cross-device sync
+        const users = await syncUsersFromSupabase();
         const user = users.find(u => (u.email === loginData.identifier || u.username === loginData.identifier) && u.password === loginData.password);
         
         if (user) {
