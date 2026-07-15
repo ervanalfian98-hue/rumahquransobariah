@@ -7,8 +7,7 @@ const keyMatch = configContent.match(/const supabaseAnonKey = '([^']+)'/);
 const supabase = createClient(urlMatch[1], keyMatch[1]);
 
 async function check() {
-    const { data, error } = await supabase.from('rqs_classes').select('*');
-    console.log("Classes:", data);
+    const { data, error } = await supabase.from('rqs_classes').select('*').order('order_index', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
     console.log("Error:", error);
 }
 check();

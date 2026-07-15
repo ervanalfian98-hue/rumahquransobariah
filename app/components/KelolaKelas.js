@@ -88,9 +88,11 @@ const KelolaKelas = ({ onBack }) => {
                     const { data: inserted } = await supabase.from('rqs_classes').insert(mapped).select();
                     if (inserted) {
                         setClasses(inserted.map(c => ({...c, desc: c.description})));
+                        localStorage.setItem('rqs_classes', JSON.stringify(inserted.map(c => ({...c, desc: c.description}))));
                     }
                 } else {
                     setClasses(data.map(c => ({...c, desc: c.description})));
+                    localStorage.setItem('rqs_classes', JSON.stringify(data.map(c => ({...c, desc: c.description}))));
                 }
             } else {
                 // Fallback local if error
@@ -118,6 +120,7 @@ const KelolaKelas = ({ onBack }) => {
 
         if (updated) {
             setClasses(updated);
+            localStorage.setItem('rqs_classes', JSON.stringify(updated));
             window.dispatchEvent(new Event('rqs-classes-updated'));
             setIsModalOpen(false);
             resetForm();
@@ -132,6 +135,7 @@ const KelolaKelas = ({ onBack }) => {
             if (!error) {
                 const updated = classes.filter(c => c.id !== id);
                 setClasses(updated);
+                localStorage.setItem('rqs_classes', JSON.stringify(updated));
                 window.dispatchEvent(new Event('rqs-classes-updated'));
             } else {
                 alert('Gagal menghapus kelas');
@@ -146,6 +150,8 @@ const KelolaKelas = ({ onBack }) => {
             return supabase.from('rqs_classes').update({ order_index: index }).eq('id', cls.id);
         });
         await Promise.all(updates);
+        
+        localStorage.setItem('rqs_classes', JSON.stringify(newOrder));
         window.dispatchEvent(new Event('rqs-classes-updated'));
     };
 
