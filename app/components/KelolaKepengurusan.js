@@ -571,7 +571,7 @@ const KelolaKepengurusan = ({ onBack }) => {
                 </h4>
                 <div className="space-y-3">
                     <button 
-                        onClick={handleMakeTholibah}
+                        onClick={removeManagementAccess}
                         className="w-full bg-white p-4 rounded-2xl shadow-sm border border-orange-200 flex items-center justify-between hover:bg-orange-50 transition-colors"
                     >
                         <div className="flex items-center gap-3">
@@ -604,7 +604,7 @@ const KelolaKepengurusan = ({ onBack }) => {
         );
     };    return (
         <div className="pb-28 animate-in fade-in duration-500 bg-[#FDFBF7] min-h-screen">
-            <div className="flex items-center p-4 bg-white sticky top-0 z-10 shadow-sm border-b border-[#E8D2A6]/30">
+            <div className="flex items-center p-4 bg-white sticky top-0 z-40 shadow-sm border-b border-[#E8D2A6]/30">
                 <button 
                     onClick={() => {
                         if (viewMode === 'main') onBack();

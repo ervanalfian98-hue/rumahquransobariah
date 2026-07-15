@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const Kepengurusan = ({ setActiveTab }) => {
     const [pengurusList, setPengurusList] = useState([]);
     const [managementUsers, setManagementUsers] = useState([]);
+    
+    // isFormOpen is no longer used but kept for component structure
     const [isFormOpen, setIsFormOpen] = useState(false);
     
     // Form state
@@ -16,16 +19,21 @@ const Kepengurusan = ({ setActiveTab }) => {
         icon: 'user'
     });
 
-    const loadData = () => {
-        // Load all users to find management
-        const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const mngUsers = allUsers.filter(u => u.role === 'management' && u.verified !== false);
-        setManagementUsers(mngUsers);
+    const loadData = async () => {
+        // Load all users to find management from Supabase
+        const { data: usersData } = await supabase.from('profiles').select('*').eq('role', 'management').eq('verified', true);
+        if (usersData) {
+            setManagementUsers(usersData);
+        }
 
-        // Load kepengurusan structure
-        const saved = localStorage.getItem('rqs_kepengurusan');
-        if (saved) {
-            setPengurusList(JSON.parse(saved));
+        // Load kepengurusan structure from Supabase
+        const { data: pengurusData, error } = await supabase.from('rqs_kepengurusan').select('*').order('created_at', { ascending: true });
+        if (!error && pengurusData) {
+            setPengurusList(pengurusData.map(p => ({
+                ...p, 
+                namaLengkap: p.nama_lengkap, 
+                userId: p.user_id
+            })));
         } else {
             setPengurusList([]);
         }

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 import KelolaTholibah from './KelolaTholibah';
 import KelolaPengajar from './KelolaPengajar';
 import KurikulumMateri from './KurikulumMateri';
@@ -35,44 +36,53 @@ const MasterScreen = () => {
         activeMenuRef.current = activeMenu;
     }, [activeMenu]);
 
-    useEffect(() => {
-        const loadStats = () => {
-            // Load Total Tholibah and Total Management
+    const loadStats = useCallback(async () => {
+        // Load Total Tholibah and Total Management directly from Supabase
+        const { data } = await supabase.from('profiles').select('role, verified');
+        
+        let totalTholibah = 0;
+        let totalManagement = 0;
+        
+        if (data) {
+            totalTholibah = data.filter(u => (u.role === 'tholibah' || u.role === 'alumni') && u.verified !== false).length;
+            totalManagement = data.filter(u => u.role === 'management' && u.verified !== false).length;
+        } else {
+            // Fallback to local
             const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-            const totalTholibah = allUsers.filter(u => u.role === 'tholibah' && u.verified !== false).length;
-            const totalManagement = allUsers.filter(u => u.role === 'management' && u.verified !== false).length;
+            totalTholibah = allUsers.filter(u => u.role === 'tholibah' && u.verified !== false).length;
+            totalManagement = allUsers.filter(u => u.role === 'management' && u.verified !== false).length;
+        }
 
-            // Load Attendance (checking rqs_jadwal if any)
-            const jadwalData = JSON.parse(localStorage.getItem('rqs_jadwal') || '[]');
-            let totalHadir = 0;
-            let totalExpected = 0;
-            
-            jadwalData.forEach(j => {
-                if (j.absensi && j.absensi.length > 0) {
-                    totalHadir += j.absensi.length;
-                    // We don't have total expected per session easily available, so we'll just mock a percentage based on presence vs total tholibah
-                    // Or if we want a realistic percentage:
-                    totalExpected += (totalTholibah > 0 ? totalTholibah : 10); 
-                }
-            });
-            
-            let attendancePercentage = 0;
-            if (totalExpected > 0) {
-                attendancePercentage = Math.round((totalHadir / totalExpected) * 100);
-                if (attendancePercentage > 100) attendancePercentage = 100;
+        // Load Attendance (checking rqs_jadwal if any)
+        const jadwalData = JSON.parse(localStorage.getItem('rqs_jadwal') || '[]');
+        let totalHadir = 0;
+        let totalExpected = 0;
+        
+        jadwalData.forEach(j => {
+            if (j.absensi && j.absensi.length > 0) {
+                totalHadir += j.absensi.length;
+                totalExpected += (totalTholibah > 0 ? totalTholibah : 10); 
             }
+        });
+        
+        let attendancePercentage = 0;
+        if (totalExpected > 0) {
+            attendancePercentage = Math.round((totalHadir / totalExpected) * 100);
+            if (attendancePercentage > 100) attendancePercentage = 100;
+        }
 
-            setStats({
-                totalTholibah,
-                totalManagement,
-                attendancePercentage: attendancePercentage > 0 ? attendancePercentage : 0 // 0 means no data yet
-            });
-        };
-
-        loadStats();
-        window.addEventListener('storage', loadStats);
-        return () => window.removeEventListener('storage', loadStats);
+        setStats({
+            totalTholibah,
+            totalManagement,
+            attendancePercentage: attendancePercentage > 0 ? attendancePercentage : 0 // 0 means no data yet
+        });
     }, []);
+
+    useEffect(() => {
+        if (!activeMenu) {
+            loadStats();
+        }
+    }, [activeMenu, loadStats]);
 
     useEffect(() => {
         const handleBack = (e) => {
