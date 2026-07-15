@@ -39,12 +39,12 @@ const LaporanKeuangan = ({ onBack }) => {
             const { data: qurbanParts } = await supabase.from('rqs_qurban_participants').select('*');
             const { data: qurbanAnimals } = await supabase.from('rqs_qurban').select('*');
             
-            // Fetch Donasi from LocalStorage (fallback since no supabase table yet)
-            const donasiLocal = JSON.parse(localStorage.getItem('rqs_donasi_local') || '[]');
+            // Fetch Donasi from Supabase
+            const { data: donasiLocal = [] } = await supabase.from('rqs_donasi').select('*');
             
-            // Fetch Pengeluaran from LocalStorage
-            const pengeluaranLocal = JSON.parse(localStorage.getItem('rqs_pengeluaran_local') || '[]');
-            setPengeluaran(pengeluaranLocal);
+            // Fetch Pengeluaran from Supabase
+            const { data: pengeluaranLocal = [] } = await supabase.from('rqs_pengeluaran').select('*').order('date', { ascending: false });
+            setPengeluaran(pengeluaranLocal || []);
 
             // Grouping logic
             const dataStruct = {
@@ -117,18 +117,17 @@ const LaporanKeuangan = ({ onBack }) => {
                     source: 'donasi',
                     date: d.date,
                     name: d.name,
-                    desc: d.desc,
+                    desc: d.description || d.desc,
                     amount: d.amount,
                     type: 'income'
                 });
             });
 
-            // Process Pengeluaran
             pengeluaranLocal.forEach(ex => {
                 const cat = dataStruct[ex.category];
-                if (cat && cat.subModules[ex.subModule]) {
-                    cat.subModules[ex.subModule].totalExpense += ex.amount;
-                    cat.subModules[ex.subModule].transactions.push({
+                if (cat && cat.subModules[ex.sub_module || ex.subModule]) {
+                    cat.subModules[ex.sub_module || ex.subModule].totalExpense += ex.amount;
+                    cat.subModules[ex.sub_module || ex.subModule].transactions.push({
                         id: ex.id,
                         originalId: ex.id,
                         source: 'pengeluaran',
@@ -187,24 +186,26 @@ const LaporanKeuangan = ({ onBack }) => {
         }
     }, [financialData, selectedCategory, selectedSubModule]);
 
-    const handleAddExpense = (e) => {
+    const handleAddExpense = async (e) => {
         e.preventDefault();
         const amt = parseInt(expenseForm.amount);
         if (!amt || !expenseForm.description) return;
 
         const newExpense = {
-            id: 'EXP-' + Date.now(),
             category: selectedCategory,
-            subModule: selectedSubModule,
+            sub_module: selectedSubModule,
             description: expenseForm.description,
             amount: amt,
             date: new Date().toISOString()
         };
 
-        const updatedPengeluaran = [newExpense, ...pengeluaran];
-        localStorage.setItem('rqs_pengeluaran_local', JSON.stringify(updatedPengeluaran));
-        setExpenseForm({ description: '', amount: '' });
-        loadData(); // Reload to recalculate
+        const { error } = await supabase.from('rqs_pengeluaran').insert([newExpense]);
+        if (!error) {
+            setExpenseForm({ description: '', amount: '' });
+            loadData(); // Reload to recalculate
+        } else {
+            alert('Gagal menambahkan pengeluaran');
+        }
     };
 
     const handleDeleteTransaction = async (trx) => {
@@ -217,12 +218,9 @@ const LaporanKeuangan = ({ onBack }) => {
             } else if (trx.source === 'qurban') {
                 await supabase.from('rqs_qurban_participants').delete().eq('id', trx.originalId);
             } else if (trx.source === 'donasi') {
-                const donasiLocal = JSON.parse(localStorage.getItem('rqs_donasi_local') || '[]');
-                const updated = donasiLocal.filter(d => d.id !== trx.originalId);
-                localStorage.setItem('rqs_donasi_local', JSON.stringify(updated));
+                await supabase.from('rqs_donasi').delete().eq('id', trx.originalId);
             } else if (trx.source === 'pengeluaran') {
-                const updated = pengeluaran.filter(ex => ex.id !== trx.originalId);
-                localStorage.setItem('rqs_pengeluaran_local', JSON.stringify(updated));
+                await supabase.from('rqs_pengeluaran').delete().eq('id', trx.originalId);
             }
             await loadData();
         } catch (error) {

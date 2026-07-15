@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const initialDonations = [
     { id: 1, name: "Hamba Allah", program: "Santri Yatim & Dhuafa", amount: 500000, date: new Date(Date.now() - 10 * 60000).toISOString(), desc: "Semoga berkah" },
@@ -38,15 +39,39 @@ const Donasi = ({ setActiveTab }) => {
     const [donations, setDonations] = useState([]);
     const [showAllDonors, setShowAllDonors] = useState(false);
     
-    // Load donations from localStorage
-    React.useEffect(() => {
-        const savedDonations = localStorage.getItem('rqs_donasi_local');
-        if (savedDonations) {
-            setDonations(JSON.parse(savedDonations));
-        } else {
-            localStorage.setItem('rqs_donasi_local', JSON.stringify(initialDonations));
-            setDonations(initialDonations);
-        }
+    // Load donations from Supabase
+    useEffect(() => {
+        const fetchDonations = async () => {
+            const { data, error } = await supabase
+                .from('rqs_donasi')
+                .select('*')
+                .order('date', { ascending: false });
+            
+            if (!error && data) {
+                if (data.length === 0) {
+                    // Seed initial data if empty
+                    const mappedInitial = initialDonations.map(d => ({
+                        name: d.name,
+                        program: d.program,
+                        amount: d.amount,
+                        date: d.date,
+                        description: d.desc
+                    }));
+                    const { data: insertedData, error: insertError } = await supabase
+                        .from('rqs_donasi')
+                        .insert(mappedInitial)
+                        .select();
+                    
+                    if (!insertError && insertedData) {
+                        const sorted = insertedData.sort((a,b) => new Date(b.date) - new Date(a.date));
+                        setDonations(sorted);
+                    }
+                } else {
+                    setDonations(data);
+                }
+            }
+        };
+        fetchDonations();
     }, []);
     
     const [formData, setFormData] = useState({
@@ -74,19 +99,28 @@ const Donasi = ({ setActiveTab }) => {
         setStep(0);
     };
 
-    const processDonation = () => {
+    const processDonation = async () => {
         const newDonation = {
-            id: Date.now(),
             name: formData.name.trim() || 'Hamba Allah',
             program: formData.program,
             amount: parseInt(formData.amount),
             date: new Date().toISOString(), // Use real submit time for sorting
-            desc: formData.description
+            description: formData.description
         };
         
-        const updatedDonations = [newDonation, ...donations];
-        setDonations(updatedDonations);
-        localStorage.setItem('rqs_donasi_local', JSON.stringify(updatedDonations));
+        const { data, error } = await supabase
+            .from('rqs_donasi')
+            .insert([newDonation])
+            .select();
+            
+        if (!error && data) {
+            const updatedDonations = [data[0], ...donations];
+            setDonations(updatedDonations);
+        } else {
+            // Fallback for UI if error
+            const fallbackDonation = { id: Date.now(), ...newDonation };
+            setDonations([fallbackDonation, ...donations]);
+        }
         setStep(5);
     };
 
@@ -448,9 +482,9 @@ const Donasi = ({ setActiveTab }) => {
                                             <p className="text-[9px] text-gray-400">{new Date(donatur.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year:'numeric'})}</p>
                                         </div>
                                     </div>
-                                    {donatur.desc && (
+                                    {donatur.description && (
                                         <div className="mt-1.5 bg-gray-50/80 p-3 rounded-xl border border-gray-100">
-                                            <p className="text-[11px] text-gray-600 italic">"{donatur.desc}"</p>
+                                            <p className="text-[11px] text-gray-600 italic">"{donatur.description}"</p>
                                         </div>
                                     )}
                                 </div>
