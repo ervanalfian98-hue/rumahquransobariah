@@ -1,40 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const RiwayatAbsensi = ({ currentUser, setActiveTab }) => {
     const [absensiHistory, setAbsensiHistory] = useState([]);
     const [setoranHistory, setSetoranHistory] = useState([]);
 
     useEffect(() => {
-        if (!currentUser) return;
-        
-        // Load Absensi
-        const jadwalData = JSON.parse(localStorage.getItem('rqs_jadwal') || '[]');
-        const myAbsensi = [];
-        jadwalData.forEach(j => {
-            if (j.absensi && Array.isArray(j.absensi)) {
-                // Some logic might store tholibahId or id
-                const record = j.absensi.find(a => a.tholibahId === currentUser.id || a.id === currentUser.id);
-                if (record) {
-                    myAbsensi.push({
-                        ...record,
-                        tanggal: j.tanggal,
-                        namaKelas: j.namaKelas,
-                        waktuSelesai: j.waktuSelesai
-                    });
+        const loadHistory = async () => {
+            if (!currentUser) return;
+            
+            // Load Absensi
+            const jadwalData = JSON.parse(localStorage.getItem('rqs_jadwal') || '[]');
+            const myAbsensi = [];
+            jadwalData.forEach(j => {
+                if (j.absensi && Array.isArray(j.absensi)) {
+                    const record = j.absensi.find(a => a.tholibahId === currentUser.id || a.id === currentUser.id);
+                    if (record) {
+                        myAbsensi.push({
+                            ...record,
+                            tanggal: j.tanggal,
+                            namaKelas: j.namaKelas,
+                            waktuSelesai: j.waktuSelesai
+                        });
+                    }
                 }
+            });
+            myAbsensi.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+            setAbsensiHistory(myAbsensi);
+
+            // Load Setoran from Supabase
+            const { data } = await supabase
+                .from('rqs_setoran_hafalan')
+                .select('*')
+                .or(`tholibah_id.eq.${currentUser.id},user_id.eq.${currentUser.id}`)
+                .order('tanggal', { ascending: false });
+            
+            if (data) {
+                setSetoranHistory(data);
             }
-        });
-        myAbsensi.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
-        setAbsensiHistory(myAbsensi);
+        };
 
-        // Load Setoran
-        const allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        const mySetoran = allSetoran.filter(s => s.tholibahId === currentUser.id);
-        mySetoran.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
-        setSetoranHistory(mySetoran);
-
+        loadHistory();
     }, [currentUser]);
 
     return (

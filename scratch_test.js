@@ -5,9 +5,8 @@ const supabaseKey = 'sb_publishable_BRlStpigfge6NxTdNS5nZg_5ycBtUHB';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function test() {
-    // try selecting from users
-    const { data, error } = await supabase.from('users').select('*').limit(1);
-    console.log('users test:', { error, data });
+    const { data, error } = await supabase.from('absensi').insert([{}]).select();
+    console.log('empty insert absensi:', { error, data });
 }
 
 test();
