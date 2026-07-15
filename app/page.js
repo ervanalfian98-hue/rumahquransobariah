@@ -92,29 +92,46 @@ export default function LoginScreen() {
     };
 
     const handleSupabaseSession = async (session) => {
-        const email = session.user.email;
-        const users = await syncUsersFromSupabase();
-        const user = users.find(u => u.email === email);
-        
-        if (user) {
-            if (user.role === 'tholibah' && user.verified === false) {
-                alert("Akun Anda belum diverifikasi oleh Management RQS. Harap menunggu konfirmasi!");
-                supabase.auth.signOut();
-                return;
-            }
-            localStorage.setItem('rqs_currentUser', JSON.stringify(user));
-            router.push('/home');
-        } else {
-            // User authenticated with Google but not in our Supabase DB yet
-            setGoogleEmail(email);
-            setIsGoogleRegister(true);
-            setIsLogin(false);
+        try {
+            const email = session.user.email;
+            const users = await syncUsersFromSupabase();
+            const user = users.find(u => u.email === email);
             
-            // Pre-fill name if available
-            const fullName = session.user.user_metadata?.full_name || '';
-            setFormData(prev => ({ ...prev, nama: prev.nama || fullName }));
+            if (user) {
+                if (user.role === 'tholibah' && user.verified === false) {
+                    alert("Akun Anda belum diverifikasi oleh Management RQS. Harap menunggu konfirmasi!");
+                    supabase.auth.signOut();
+                    return;
+                }
+                localStorage.setItem('rqs_currentUser', JSON.stringify(user));
+                router.push('/home');
+            } else {
+                // User authenticated with Google but not in our Supabase DB yet
+                setGoogleEmail(email);
+                setIsGoogleRegister(true);
+                setIsLogin(false);
+                
+                // Pre-fill name if available
+                const fullName = session.user.user_metadata?.full_name || '';
+                setFormData(prev => ({ ...prev, nama: prev.nama || fullName }));
+            }
+        } catch (error) {
+            console.error("Error in handleSupabaseSession:", error);
+            alert("Terjadi kesalahan saat memproses sesi login: " + error.message);
         }
     };
+
+    useEffect(() => {
+        // Cek jika ada error dari redirect Supabase di URL hash
+        if (window.location.hash.includes('error=')) {
+            const urlParams = new URLSearchParams(window.location.hash.substring(1));
+            const errorDesc = urlParams.get('error_description');
+            if (errorDesc) {
+                alert("Supabase Error: " + errorDesc.replace(/\+/g, ' '));
+                window.history.replaceState(null, '', window.location.pathname);
+            }
+        }
+    }, []);
 
     const handleRegisterSubmit = async (e) => {
         e.preventDefault();
