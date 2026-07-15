@@ -30,7 +30,7 @@ const KelolaPengajar = ({ onBack }) => {
         if (!pengajarError && pengajarData) {
             if (pengajarData.length === 0) {
                 const initialData = [
-                    { id: '1', name: 'Lia', gender: 'ustadzah', classes: ['tahsin_teori'] }
+                    { name: 'Lia', gender: 'ustadzah', classes: ['tahsin_teori'] }
                 ];
                 const { data: inserted } = await supabase.from('rqs_pengajar').insert(initialData).select();
                 if (inserted) setPengajarList(inserted.map(p => ({...p, userId: p.user_id})));
@@ -64,8 +64,7 @@ const KelolaPengajar = ({ onBack }) => {
         if (!nama.trim()) return alert("Nama pengajar tidak boleh kosong.");
         if (selectedClasses.length === 0) return alert("Pilih minimal satu kelas untuk diajar.");
 
-        const newPengajar = {
-            id: editingId || Date.now().toString(),
+        const basePengajar = {
             name: nama,
             user_id: userId || null,
             gender,
@@ -73,11 +72,20 @@ const KelolaPengajar = ({ onBack }) => {
         };
 
         if (editingId) {
-            await supabase.from('rqs_pengajar').update(newPengajar).eq('id', editingId);
+            const { error } = await supabase.from('rqs_pengajar').update(basePengajar).eq('id', editingId);
+            if (error) {
+                alert("Gagal mengupdate pengajar: " + error.message);
+                return;
+            }
         } else {
-            await supabase.from('rqs_pengajar').insert([newPengajar]);
+            const { error } = await supabase.from('rqs_pengajar').insert([basePengajar]);
+            if (error) {
+                alert("Gagal menambah pengajar: " + error.message);
+                return;
+            }
         }
 
+        window.dispatchEvent(new Event('rqs-pengajar-updated'));
         loadData();
         
         setIsModalOpen(false);

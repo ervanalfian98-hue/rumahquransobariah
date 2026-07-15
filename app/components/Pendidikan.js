@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES as INITIAL_CLASSES } from './MockData';
+import { supabase } from '../lib/supabaseClient';
 
 const getLocalDateString = (dateObj = new Date()) => {
     return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
@@ -23,15 +24,14 @@ const PendidikanScreen = ({ currentUser }) => {
     const [teacherPresentRecord, setTeacherPresentRecord] = useState({});
 
     useEffect(() => {
-        const loadData = () => {
+        const loadData = async () => {
             let currentClasses = INITIAL_CLASSES;
-            const savedClasses = localStorage.getItem('rqs_classes');
-            if (savedClasses) {
-                currentClasses = JSON.parse(savedClasses);
+            const { data: dbClasses } = await supabase.from('rqs_classes').select('*');
+            if (dbClasses && dbClasses.length > 0) {
+                currentClasses = dbClasses.map(c => ({...c, desc: c.description}));
             }
             setClassesList(currentClasses);
             
-            // Set selectedClass if it's currently null or not in the updated list
             setSelectedClass(prev => {
                 if (!prev || !currentClasses.find(c => c.id === prev.id)) {
                     return currentClasses.length > 0 ? currentClasses[0] : null;
@@ -39,26 +39,30 @@ const PendidikanScreen = ({ currentUser }) => {
                 return currentClasses.find(c => c.id === prev.id);
             });
 
-            const savedPengajar = localStorage.getItem('rqs_pengajar');
-            if (savedPengajar) setPengajarList(JSON.parse(savedPengajar));
-
-            const savedTholibah = localStorage.getItem('rqs_tholibah');
-            if (savedTholibah) {
-                setTholibahList(JSON.parse(savedTholibah));
-            } else {
-                const initialData = [
-                    { id: '1', name: 'Aisyah Putri', phone: '081234567890', classes: [], joined: '2026-06-20' },
-                    { id: '2', name: 'Siti Aminah', phone: '081298765432', classes: [], joined: '2026-06-25' },
-                    { id: '3', name: 'Fatimah Az-Zahra', phone: '081311112222', classes: ['tahsin_pemula'], joined: '2026-01-10' },
-                    { id: '4', name: 'Khadijah', phone: '081333334444', classes: ['tahsin_teori'], joined: '2026-02-15' },
-                    { id: '5', name: 'Zainab', phone: '081455556666', classes: ['tahfidz'], joined: '2025-10-05' },
-                ];
-                setTholibahList(initialData);
-                localStorage.setItem('rqs_tholibah', JSON.stringify(initialData));
+            const { data: pengajarData } = await supabase.from('rqs_pengajar').select('*');
+            if (pengajarData) {
+                setPengajarList(pengajarData.map(p => ({...p, userId: p.user_id})));
             }
 
-            const savedSchedules = localStorage.getItem('rqs_jadwal_kelas');
-            if (savedSchedules) setSchedules(JSON.parse(savedSchedules));
+            const { data: tholibahData } = await supabase.from('rqs_tholibah').select('*');
+            if (tholibahData) {
+                setTholibahList(tholibahData);
+            }
+
+            const { data: schedulesData } = await supabase.from('rqs_jadwal_kelas').select('*');
+            if (schedulesData) {
+                const formattedSchedules = schedulesData.map(s => ({
+                    id: s.id,
+                    classId: s.class_id,
+                    className: s.class_name,
+                    date: s.date,
+                    startTime: s.start_time,
+                    endTime: s.end_time,
+                    materi: s.materi,
+                    pengajar: s.pengajar
+                }));
+                setSchedules(formattedSchedules);
+            }
 
             const today = getLocalDateString();
             const savedAbsen = localStorage.getItem(`rqs_absen_${today}`);
@@ -74,7 +78,17 @@ const PendidikanScreen = ({ currentUser }) => {
 
         loadData();
         window.addEventListener('storage', loadData);
-        return () => window.removeEventListener('storage', loadData);
+        window.addEventListener('rqs-classes-updated', loadData);
+        window.addEventListener('rqs-pengajar-updated', loadData);
+        window.addEventListener('rqs-jadwal-updated', loadData);
+        window.addEventListener('rqs-tholibah-updated', loadData);
+        return () => {
+            window.removeEventListener('storage', loadData);
+            window.removeEventListener('rqs-classes-updated', loadData);
+            window.removeEventListener('rqs-pengajar-updated', loadData);
+            window.removeEventListener('rqs-jadwal-updated', loadData);
+            window.removeEventListener('rqs-tholibah-updated', loadData);
+        };
     }, []);
 
     const getClassTeachers = (classId) => {

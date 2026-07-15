@@ -151,6 +151,7 @@ const KelolaTholibah = ({ onBack }) => {
             id: t.id, name: t.name, phone: t.phone, email: t.email, classes: t.classes, joined: t.joined, tanggal_lahir: t.tanggalLahir, tempat_lahir: t.tempatLahir, role: t.role
         }));
         await supabase.from('rqs_tholibah').upsert(toUpsert);
+        window.dispatchEvent(new Event('rqs-tholibah-updated'));
     };
 
     const handleSaveAssignClasses = async () => {
@@ -242,6 +243,7 @@ const KelolaTholibah = ({ onBack }) => {
 
         setViewMode('main');
         setSelectedStudent(null);
+        window.dispatchEvent(new Event('rqs-tholibah-updated'));
         alert(`Akun ${targetName} telah dibersihkan secara permanen.`);
     };
 

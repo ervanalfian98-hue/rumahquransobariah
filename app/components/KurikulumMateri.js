@@ -94,6 +94,7 @@ const KurikulumMateri = ({ onBack }) => {
                 materi: inserted.materi
             };
             setSchedules([...schedules, newSchedule]);
+            window.dispatchEvent(new Event('rqs-jadwal-updated'));
         }
 
         // Reset form
@@ -106,6 +107,7 @@ const KurikulumMateri = ({ onBack }) => {
             await supabase.from('rqs_jadwal_kelas').delete().eq('id', id);
             const updated = schedules.filter(s => s.id !== id);
             setSchedules(updated);
+            window.dispatchEvent(new Event('rqs-jadwal-updated'));
         }
     };
 

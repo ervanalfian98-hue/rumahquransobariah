@@ -96,7 +96,6 @@ const KelolaKelas = ({ onBack }) => {
                 // Fallback local if error
                 const saved = localStorage.getItem('rqs_classes');
                 if (saved) setClasses(JSON.parse(saved));
-                setClasses(data.map(c => ({...c, desc: c.description})));
             }
         };
         loadClasses();
