@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
-import { CLASSES } from './MockData';
+import { CLASSES as INITIAL_CLASSES } from './MockData';
 
 const KurikulumMateri = ({ onBack }) => {
     const [pengajarList, setPengajarList] = useState([]);
     const [schedules, setSchedules] = useState([]);
+    const [classesList, setClassesList] = useState([]);
     const [activeTab, setActiveTab] = useState('active'); // active | history
+    const [selectedClass, setSelectedClass] = useState(null);
 
     // Form states
     const [classId, setClassId] = useState('');
@@ -18,11 +20,26 @@ const KurikulumMateri = ({ onBack }) => {
     const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
-        const savedPengajar = localStorage.getItem('rqs_pengajar');
-        if (savedPengajar) setPengajarList(JSON.parse(savedPengajar));
+        const loadData = () => {
+            const savedPengajar = localStorage.getItem('rqs_pengajar');
+            if (savedPengajar) setPengajarList(JSON.parse(savedPengajar));
 
-        const savedSchedules = localStorage.getItem('rqs_jadwal_kelas');
-        if (savedSchedules) setSchedules(JSON.parse(savedSchedules));
+            const savedSchedules = localStorage.getItem('rqs_jadwal_kelas');
+            if (savedSchedules) setSchedules(JSON.parse(savedSchedules));
+
+            let currentClasses = INITIAL_CLASSES;
+            const savedClasses = localStorage.getItem('rqs_classes');
+            if (savedClasses) {
+                currentClasses = JSON.parse(savedClasses);
+            }
+            setClassesList(currentClasses);
+            
+            if (currentClasses.length > 0 && !selectedClass) {
+                setSelectedClass(currentClasses[0].id);
+            }
+        };
+
+        loadData();
     }, []);
 
     const getClassTeachers = (cId) => {
@@ -42,7 +59,7 @@ const KurikulumMateri = ({ onBack }) => {
         const newSchedule = {
             id: Date.now().toString(),
             classId,
-            className: CLASSES.find(c => c.id === classId)?.name,
+            className: classesList.find(c => c.id === classId)?.name,
             pengajar: getClassTeachers(classId),
             date,
             startTime,
@@ -85,8 +102,8 @@ const KurikulumMateri = ({ onBack }) => {
         return false;
     };
 
-    const activeSchedules = schedules.filter(s => !isPast(s)).sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-    const historySchedules = schedules.filter(s => isPast(s)).sort((a,b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime)); // descending
+    const activeSchedules = schedules.filter(s => !isPast(s)).filter(s => !selectedClass || s.classId === selectedClass).sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+    const historySchedules = schedules.filter(s => isPast(s)).filter(s => !selectedClass || s.classId === selectedClass).sort((a,b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime)); // descending
 
     return (
         <div className="pb-32 animate-in fade-in duration-300 bg-[#FDFBF7] min-h-screen relative z-30">
@@ -101,6 +118,19 @@ const KurikulumMateri = ({ onBack }) => {
             </div>
 
             <div className="p-5">
+                {/* Classes Filter */}
+                <div className="flex overflow-x-auto gap-3 pb-4 hide-scrollbar">
+                    {classesList.map(cls => (
+                        <button
+                            key={cls.id}
+                            onClick={() => setSelectedClass(cls.id)}
+                            className={`flex-shrink-0 px-4 py-2 rounded-xl text-[12px] font-bold transition-all border ${selectedClass === cls.id ? 'bg-[#4A1C14] text-white border-[#4A1C14] shadow-md' : 'bg-white text-[#4A1C14] border-[#E8D2A6]/50 hover:bg-[#FCF7E8]'}`}
+                        >
+                            {cls.name}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Tabs */}
                 <div className="flex p-1 bg-gray-100 rounded-xl mb-5 border border-gray-200">
                     <button 
@@ -140,7 +170,7 @@ const KurikulumMateri = ({ onBack }) => {
                                 <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Pilih Kelas</label>
                                 <select required value={classId} onChange={(e) => setClassId(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-black font-semibold outline-none focus:border-[#B88A44]">
                                     <option value="" disabled>Pilih Kelas...</option>
-                                    {CLASSES.map(c => (
+                                    {classesList.map(c => (
                                         <option key={c.id} value={c.id}>{c.name}</option>
                                     ))}
                                 </select>

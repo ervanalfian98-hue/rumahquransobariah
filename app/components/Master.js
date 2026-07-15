@@ -11,6 +11,7 @@ import GaleriDokumentasi from './GaleriDokumentasi';
 import KelolaArtikel from './KelolaArtikel';
 import KelolaRenungan from './KelolaRenungan';
 import KelolaKepengurusan from './KelolaKepengurusan';
+import KelolaKelas from './KelolaKelas';
 import SetorHafalanMaster from './SetorHafalanMaster';
 import KelolaRqsBerdaya from './KelolaRqsBerdaya';
 import KelolaMerchandise from './KelolaMerchandise';
@@ -104,8 +105,9 @@ const MasterScreen = () => {
     if (activeMenu === 'galeri') return <GaleriDokumentasi onBack={goBack} />;
     if (activeMenu === 'artikel') return <KelolaArtikel onBack={goBack} />;
     if (activeMenu === 'renungan') return <KelolaRenungan onBack={goBack} />;
-    if (activeMenu === 'setorHafalan') return <SetorHafalanMaster onBack={goBack} />;
     if (activeMenu === 'kepengurusan') return <KelolaKepengurusan onBack={goBack} />;
+    if (activeMenu === 'kelas') return <KelolaKelas onBack={goBack} />;
+    if (activeMenu === 'setorHafalan') return <SetorHafalanMaster onBack={goBack} />;
     if (activeMenu === 'rqsBerdaya') return <KelolaRqsBerdaya onBack={goBack} />;
     if (activeMenu === 'merchandise') return <KelolaMerchandise onBack={goBack} />;
     if (activeMenu === 'rqsHerbal') return <KelolaRqsHerbal onBack={goBack} />;
@@ -186,6 +188,15 @@ const MasterScreen = () => {
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kurikulum & Materi</h4>
                         <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Susun materi pembelajaran dan struktur kurikulum kelas</p>
+                    </div>
+
+                    {/* Card: Kelola Kelas */}
+                    <div onClick={() => handleMenuClick('kelas')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
+                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
+                            <PhosphorIcon icon="books" size={28} />
+                        </div>
+                        <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Kelola Kelas</h4>
+                        <p className="text-[9px] text-[#4A1C14]/60 leading-tight">Atur nama kelas, tingkatan, dan hapus/tambah kelas baru</p>
                     </div>
 
                     {/* Card 4 */}

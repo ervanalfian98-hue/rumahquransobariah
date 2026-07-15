@@ -1,21 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
-
-const KELAS_LIST = [
-    { id: 'tahsin_pemula', name: 'Tahsin Pemula' },
-    { id: 'tahsin_teori', name: 'Tahsin Teori' },
-    { id: 'pra_tahfidz', name: 'Pra Tahfidz' },
-    { id: 'tahfidz', name: 'Tahfidz' },
-    { id: 'b_arab_tamyiz', name: 'B. Arab Tamyiz' },
-    { id: 'ulc', name: 'ULC' },
-    { id: 'matan', name: 'Matan' }
-];
+import { CLASSES as INITIAL_CLASSES } from './MockData';
 
 const KelolaPengajar = ({ onBack }) => {
     const [pengajarList, setPengajarList] = useState([]);
     const [managementUsers, setManagementUsers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [classesList, setClassesList] = useState([]);
     
     // Form state
     const [editingId, setEditingId] = useState(null);
@@ -24,32 +16,42 @@ const KelolaPengajar = ({ onBack }) => {
     const [gender, setGender] = useState('ustadzah');
     const [selectedClasses, setSelectedClasses] = useState([]);
 
-    const loadPengajar = () => {
+    const loadData = () => {
         // Load all users to find management
         const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
         const mngUsers = allUsers.filter(u => u.role === 'management' && u.verified !== false);
         setManagementUsers(mngUsers);
 
+        // Load Pengajar
         const saved = localStorage.getItem('rqs_pengajar');
         if (saved) {
             setPengajarList(JSON.parse(saved));
         } else {
-            // Default mock data if empty
             const initialData = [
                 { id: '1', name: 'Lia', gender: 'ustadzah', classes: ['tahsin_teori'] }
             ];
             localStorage.setItem('rqs_pengajar', JSON.stringify(initialData));
             setPengajarList(initialData);
         }
+
+        // Load Classes
+        const savedClasses = localStorage.getItem('rqs_classes');
+        if (savedClasses) {
+            setClassesList(JSON.parse(savedClasses));
+        } else {
+            setClassesList(INITIAL_CLASSES);
+        }
     };
 
     useEffect(() => {
-        loadPengajar();
-        window.addEventListener('storage', loadPengajar);
-        window.addEventListener('rqs-pengajar-updated', loadPengajar);
+        loadData();
+        window.addEventListener('storage', loadData);
+        window.addEventListener('rqs-pengajar-updated', loadData);
+        window.addEventListener('rqs-classes-updated', loadData);
         return () => {
-            window.removeEventListener('storage', loadPengajar);
-            window.removeEventListener('rqs-pengajar-updated', loadPengajar);
+            window.removeEventListener('storage', loadData);
+            window.removeEventListener('rqs-pengajar-updated', loadData);
+            window.removeEventListener('rqs-classes-updated', loadData);
         };
     }, []);
 
@@ -120,13 +122,12 @@ const KelolaPengajar = ({ onBack }) => {
     };
 
     const getClassName = (id) => {
-        const cls = KELAS_LIST.find(c => c.id === id);
+        const cls = classesList.find(c => c.id === id);
         return cls ? cls.name : id;
     };
 
     return (
         <div className="pb-28 animate-in fade-in duration-500 bg-[#FDFBF7] min-h-screen">
-            {/* Header */}
             <div className="flex items-center p-4 bg-white sticky top-0 z-10 shadow-sm border-b border-[#E8D2A6]/30">
                 <button onClick={onBack} className="p-2 -ml-2 mr-2 text-[#4A1C14] hover:bg-[#FCF7E8] rounded-full transition-colors">
                     <PhosphorIcon icon="arrow-left" size={24} weight="bold" />
@@ -190,12 +191,15 @@ const KelolaPengajar = ({ onBack }) => {
                                     <p className="text-[10px] font-bold text-[#4A1C14] mb-2 flex items-center gap-1">
                                         <PhosphorIcon icon="chalkboard-teacher" size={14} className="text-[#B88A44]" /> Mengajar di:
                                     </p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {p.classes.map(clsId => (
-                                            <span key={clsId} className="text-[9px] font-bold text-[#4A1C14]/80 bg-white border border-[#E8D2A6]/50 px-2 py-1 rounded-full shadow-sm">
-                                                {getClassName(clsId)}
-                                            </span>
-                                        ))}
+                                    <div className="flex flex-wrap gap-1.5 justify-center mt-2">
+                                        {p.classes.map(clsId => {
+                                            const cls = classesList.find(c => c.id === clsId);
+                                            return cls ? (
+                                                <span key={clsId} className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase leading-tight shadow-sm ${cls.color ? cls.color.split(' ')[0] : 'bg-gray-200'} ${cls.color ? cls.color.split(' ')[1] : 'text-gray-800'}`}>
+                                                    {cls.name}
+                                                </span>
+                                            ) : null;
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -204,7 +208,6 @@ const KelolaPengajar = ({ onBack }) => {
                 )}
             </div>
 
-            {/* Modal Tambah/Edit Pengajar */}
             <AnimatePresence>
                 {isModalOpen && (
                     <motion.div 
@@ -227,7 +230,6 @@ const KelolaPengajar = ({ onBack }) => {
                             
                             <div className="p-5 overflow-y-auto bg-[#FDFBF7] flex-1">
                                 <div className="space-y-4">
-                                    {/* Nama Pengajar */}
                                     <div>
                                         <label className="text-[10px] font-bold text-[#4A1C14] uppercase tracking-wider block mb-1.5">Nama Panggilan</label>
                                         <input 
@@ -239,7 +241,6 @@ const KelolaPengajar = ({ onBack }) => {
                                         />
                                     </div>
 
-                                    {/* Akun Terdaftar */}
                                     <div>
                                         <label className="text-[10px] font-bold text-[#4A1C14] uppercase tracking-wider block mb-1.5">Akun Terdaftar</label>
                                         <select 
@@ -254,7 +255,6 @@ const KelolaPengajar = ({ onBack }) => {
                                         </select>
                                     </div>
 
-                                    {/* Gelar / Gender */}
                                     <div>
                                         <label className="text-[10px] font-bold text-[#4A1C14] uppercase tracking-wider block mb-1.5">Gelar Pengajar</label>
                                         <div className="flex gap-3">
@@ -269,11 +269,10 @@ const KelolaPengajar = ({ onBack }) => {
                                         </div>
                                     </div>
 
-                                    {/* Pilih Kelas */}
                                     <div>
-                                        <label className="text-[10px] font-bold text-[#4A1C14] uppercase tracking-wider block mb-2 mt-2">Tugas Mengajar (Bisa Lebih Dari Satu)</label>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1 hide-scrollbar">
-                                            {KELAS_LIST.map((cls) => (
+                                        <label className="block text-[11px] font-bold text-[#4A1C14]/70 mb-2">Kelas yang Diajar</label>
+                                        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1 hide-scrollbar">
+                                            {classesList.map(cls => (
                                                 <label key={cls.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${selectedClasses.includes(cls.id) ? 'bg-[#FCF7E8] border-[#B88A44] shadow-sm' : 'bg-white border-[#E8D2A6]/50 hover:bg-gray-50'}`}>
                                                     <input type="checkbox" className="hidden" checked={selectedClasses.includes(cls.id)} onChange={() => toggleClass(cls.id)} />
                                                     <div className={`w-5 h-5 rounded flex items-center justify-center border ${selectedClasses.includes(cls.id) ? 'bg-[#B88A44] border-[#B88A44] text-white' : 'border-gray-300'}`}>

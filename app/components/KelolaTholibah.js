@@ -1,72 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
-import { CLASSES } from './MockData';
+import { CLASSES as INITIAL_CLASSES } from './MockData';
 import { supabase } from '../lib/supabaseClient';
 
 const KelolaTholibah = ({ onBack }) => {
     const [tholibahList, setTholibahList] = useState([]);
+    const [classesList, setClassesList] = useState([]);
     const [viewMode, setViewMode] = useState('main'); // 'main', 'class_detail', 'student_detail', 'absen_detail', 'setoran_detail', 'infaq_detail'
     const [selectedClass, setSelectedClass] = useState(null);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [studentToAssign, setStudentToAssign] = useState(null);
+    const [selectedClassesForAssign, setSelectedClassesForAssign] = useState([]);
 
     const [studentStats, setStudentStats] = useState({ absensiList: [], setoranList: [] });
 
-    const loadTholibah = () => {
-        const savedTholibah = JSON.parse(localStorage.getItem('rqs_tholibah') || '[]');
-        const savedUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+    useEffect(() => {
+        const loadTholibah = () => {
+            const savedTholibah = JSON.parse(localStorage.getItem('rqs_tholibah') || '[]');
+            const savedUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
 
-        let updated = false;
-        const currentList = [...savedTholibah];
-
-        savedUsers.forEach(u => {
-            if ((u.role === 'tholibah' || u.role === 'alumni') && u.verified !== false) {
-                const exists = currentList.find(t => t.id === u.id || t.phone === u.phone || t.name === u.nama);
-                if (!exists) {
-                    currentList.push({
-                        id: u.id,
-                        name: u.nama,
-                        phone: u.phone,
-                        email: u.email,
-                        classId: u.role === 'alumni' ? 'alumni' : null,
-                        joined: new Date().toISOString().split('T')[0],
-                        tanggalLahir: u.tanggalLahir,
-                        tempatLahir: u.tempatLahir,
-                        role: u.role
-                    });
-                    updated = true;
-                } else {
-                    let changed = false;
-                    if (exists.role !== u.role) {
-                        exists.role = u.role;
-                        if (u.role === 'alumni') exists.classId = 'alumni';
-                        changed = true;
-                    }
-                    if (!exists.email && u.email) {
-                        exists.email = u.email;
-                        changed = true;
-                    }
-                    if (!exists.tempatLahir && u.tempatLahir) {
-                        exists.tempatLahir = u.tempatLahir;
-                        changed = true;
-                    }
-                    if (!exists.tanggalLahir && u.tanggalLahir) {
-                        exists.tanggalLahir = u.tanggalLahir;
-                        changed = true;
-                    }
-                    if (changed) updated = true;
+            let updated = false;
+            const currentList = savedTholibah.map(t => {
+                if (t.classId !== undefined && !t.classes) {
+                    t.classes = t.classId ? [t.classId] : [];
+                    delete t.classId;
                 }
-            }
-        });
+                if (!t.classes) t.classes = [];
+                return t;
+            });
 
-        if (updated) {
-            localStorage.setItem('rqs_tholibah', JSON.stringify(currentList));
-        }
+            savedUsers.forEach(u => {
+                if ((u.role === 'tholibah' || u.role === 'alumni') && u.verified !== false) {
+                    const exists = currentList.find(t => t.id === u.id || t.phone === u.phone || t.name === u.nama);
+                    if (!exists) {
+                        currentList.push({
+                            id: u.id,
+                            name: u.nama,
+                            phone: u.phone,
+                            email: u.email,
+                            classes: u.role === 'alumni' ? ['alumni'] : [],
+                            joined: new Date().toISOString().split('T')[0],
+                            tanggalLahir: u.tanggalLahir,
+                            tempatLahir: u.tempatLahir,
+                            role: u.role
+                        });
+                        updated = true;
+                    } else {
+                        let changed = false;
+                        if (exists.role !== u.role) {
+                            exists.role = u.role;
+                            if (u.role === 'alumni') exists.classes = ['alumni'];
+                            changed = true;
+                        }
+                        if (!exists.email && u.email) {
+                            exists.email = u.email;
+                            changed = true;
+                        }
+                        if (!exists.tempatLahir && u.tempatLahir) {
+                            exists.tempatLahir = u.tempatLahir;
+                            changed = true;
+                        }
+                        if (!exists.tanggalLahir && u.tanggalLahir) {
+                            exists.tanggalLahir = u.tanggalLahir;
+                            changed = true;
+                        }
+                        if (changed) updated = true;
+                    }
+                }
+            });
+
+            if (updated) {
+                localStorage.setItem('rqs_tholibah', JSON.stringify(currentList));
+            }
+            setTholibahList(currentList);
+        };
+
+        const loadClasses = () => {
+            const savedClasses = localStorage.getItem('rqs_classes');
+            if (savedClasses) {
+                setClassesList(JSON.parse(savedClasses));
+            } else {
+                setClassesList(INITIAL_CLASSES);
+            }
+        };
+
+        loadTholibah();
+        loadClasses();
+
+        window.addEventListener('storage', () => {
+            loadTholibah();
+            loadClasses();
+        });
+        window.addEventListener('rqs-classes-updated', loadClasses);
         
-        setTholibahList(currentList);
-    };
+        return () => {
+            window.removeEventListener('storage', loadTholibah);
+            window.removeEventListener('rqs-classes-updated', loadClasses);
+        };
+    }, []);
 
     const calculateAge = (dob) => {
         if (!dob) return '-';
@@ -81,7 +114,6 @@ const KelolaTholibah = ({ onBack }) => {
     };
 
     const fetchStudentStats = (student) => {
-        // 1. Absensi
         const absensiList = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -92,7 +124,13 @@ const KelolaTholibah = ({ onBack }) => {
                     if (data[student.id]) {
                         const isHadir = Array.isArray(data[student.id]) ? data[student.id].length > 0 : !!data[student.id];
                         if (isHadir) {
-                            absensiList.push({ date, classId: Array.isArray(data[student.id]) ? data[student.id][0] : null });
+                            if (Array.isArray(data[student.id])) {
+                                data[student.id].forEach(cId => {
+                                    absensiList.push({ date, classId: cId });
+                                });
+                            } else {
+                                absensiList.push({ date, classId: null });
+                            }
                         }
                     }
                 } catch(e) {}
@@ -100,24 +138,18 @@ const KelolaTholibah = ({ onBack }) => {
         }
         absensiList.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-        // 2. Setoran
         const allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        // Match by name or ID if available
         const setoranList = allSetoran.filter(s => s.tholibah_name === student.name || s.userId === student.id).sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
 
         setStudentStats({ absensiList, setoranList });
     };
-
-    useEffect(() => {
-        loadTholibah();
-    }, []);
 
     const saveTholibah = (newList) => {
         setTholibahList(newList);
         localStorage.setItem('rqs_tholibah', JSON.stringify(newList));
     };
 
-    const handleAssignClass = (classId) => {
+    const handleSaveAssignClasses = () => {
         if (!studentToAssign) return;
 
         let shouldUpdateUserRole = studentToAssign.role === 'alumni';
@@ -132,31 +164,38 @@ const KelolaTholibah = ({ onBack }) => {
         }
 
         const newList = tholibahList.map(t => 
-            t.id === studentToAssign.id ? { ...t, classId: classId, role: shouldUpdateUserRole ? 'tholibah' : t.role } : t
+            t.id === studentToAssign.id ? { ...t, classes: selectedClassesForAssign, role: shouldUpdateUserRole ? 'tholibah' : t.role } : t
         );
         saveTholibah(newList);
 
         if (selectedStudent && selectedStudent.id === studentToAssign.id) {
-            setSelectedStudent({ ...selectedStudent, classId: classId, role: shouldUpdateUserRole ? 'tholibah' : selectedStudent.role });
+            setSelectedStudent({ ...selectedStudent, classes: selectedClassesForAssign, role: shouldUpdateUserRole ? 'tholibah' : selectedStudent.role });
         }
 
         setIsAssignModalOpen(false);
         setStudentToAssign(null);
     };
 
+    const toggleClassForAssign = (cId) => {
+        setSelectedClassesForAssign(prev => prev.includes(cId) ? prev.filter(id => id !== cId) : [...prev, cId]);
+    };
+
     const openAssignModal = (student) => {
         setStudentToAssign(student);
+        setSelectedClassesForAssign(student.classes || []);
         setIsAssignModalOpen(true);
     };
 
-    const getUnassignedTholibah = () => tholibahList.filter(t => !t.classId && t.role !== 'alumni');
-    const getTholibahByClass = (classId) => tholibahList.filter(t => t.classId === classId);
+    const getUnassignedTholibah = () => tholibahList.filter(t => (!t.classes || t.classes.length === 0) && t.role !== 'alumni');
+    const getTholibahByClass = (classId) => {
+        if (classId === 'all_active') return tholibahList.filter(t => t.role !== 'alumni');
+        return tholibahList.filter(t => t.classes && t.classes.includes(classId));
+    };
 
     const handleMakeAlumni = () => {
         if (!selectedStudent) return;
         if (!window.confirm(`Apakah Anda yakin ingin menjadikan ${selectedStudent.name} sebagai Alumni? Mereka akan dikeluarkan dari kelas saat ini.`)) return;
 
-        // Update rqs_users
         const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
         const userIndex = allUsers.findIndex(u => u.id === selectedStudent.id);
         if (userIndex !== -1) {
@@ -164,9 +203,8 @@ const KelolaTholibah = ({ onBack }) => {
             localStorage.setItem('rqs_users', JSON.stringify(allUsers));
         }
 
-        // Update rqs_tholibah
         const newList = tholibahList.map(t => 
-            t.id === selectedStudent.id ? { ...t, role: 'alumni', classId: 'alumni' } : t
+            t.id === selectedStudent.id ? { ...t, role: 'alumni', classes: ['alumni'] } : t
         );
         saveTholibah(newList);
         
@@ -181,42 +219,27 @@ const KelolaTholibah = ({ onBack }) => {
         if (!window.confirm(`PERINGATAN 2: Tindakan ini tidak bisa dibatalkan! Semua data absen, setoran, dan progress akun ${selectedStudent.name} akan musnah sampai ke akarnya. Lanjutkan?`)) return;
 
         let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        
-        // Coba cari ID asli dari rqs_users untuk memastikan ID-nya akurat dengan Supabase
         const actualUser = allUsers.find(u => u.id === selectedStudent.id || u.nama === selectedStudent.name || u.phone === selectedStudent.phone);
         const finalDeleteId = actualUser ? actualUser.id : selectedStudent.id;
         const targetName = selectedStudent.name;
 
-        // Delete from Supabase Database
-        // 1. Delete from profiles (if RPC is not used or as fallback)
         const { error: profileError } = await supabase.from('profiles').delete().eq('id', finalDeleteId);
-        
-        if (profileError) {
-            console.error("Gagal hapus profile:", profileError);
-        }
+        if (profileError) console.error("Gagal hapus profile:", profileError);
 
-        // 2. Call RPC to delete auth user (Requires SQL setup in Supabase)
         const { error: rpcError } = await supabase.rpc('delete_user_admin', { user_id_to_delete: finalDeleteId });
-        if (rpcError) {
-            console.warn("RPC delete_user_admin gagal (mungkin belum dibuat di Supabase):", rpcError.message);
-        }
+        if (rpcError) console.warn("RPC delete_user_admin gagal:", rpcError.message);
 
-        // Remove from rqs_users
         allUsers = allUsers.filter(u => u.id !== finalDeleteId);
         localStorage.setItem('rqs_users', JSON.stringify(allUsers));
 
-        // Remove from rqs_tholibah
         let currentTholibah = JSON.parse(localStorage.getItem('rqs_tholibah') || '[]');
         currentTholibah = currentTholibah.filter(t => t.id !== finalDeleteId);
         setTholibahList(currentTholibah);
         localStorage.setItem('rqs_tholibah', JSON.stringify(currentTholibah));
 
-        // Remove traces in localstorage
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (!key) continue;
-
-            // Clean Absensi
             if (key.startsWith('rqs_absen_')) {
                 try {
                     const data = JSON.parse(localStorage.getItem(key));
@@ -226,14 +249,11 @@ const KelolaTholibah = ({ onBack }) => {
                     }
                 } catch(e) {}
             }
-            
-            // Clean specific keys
             if (key.includes(finalDeleteId)) {
                 localStorage.removeItem(key);
             }
         }
 
-        // Clean Setoran
         let allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
         allSetoran = allSetoran.filter(s => s.tholibah_name !== targetName && s.userId !== finalDeleteId);
         localStorage.setItem('rqs_setoran_hafalan', JSON.stringify(allSetoran));
@@ -245,7 +265,6 @@ const KelolaTholibah = ({ onBack }) => {
 
     const renderMainView = () => (
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="px-5 mt-4 space-y-6">
-            {/* Unassigned Students Section */}
             {getUnassignedTholibah().length > 0 && (
                 <div>
                     <h3 className="font-bold text-red-600 mb-3 flex items-center gap-2 border-b border-red-200 pb-2">
@@ -278,14 +297,13 @@ const KelolaTholibah = ({ onBack }) => {
                 </div>
             )}
 
-            {/* Classes Section */}
             <div>
                 <h3 className="font-bold text-[#4A1C14] mb-3 flex items-center gap-2 border-b border-[#E8D2A6]/50 pb-2">
                     <PhosphorIcon icon="books" size={18} className="text-[#B88A44]" />
                     Daftar Kelas RQS
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
-                    {CLASSES.map(cls => {
+                    {classesList.map(cls => {
                         const studentsInClass = getTholibahByClass(cls.id).length;
                         return (
                             <div 
@@ -307,7 +325,6 @@ const KelolaTholibah = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Alumni Section */}
             <div className="mt-8">
                 <h3 className="font-bold text-[#4A1C14] mb-3 flex items-center gap-2 border-b border-[#E8D2A6]/50 pb-2">
                     <PhosphorIcon icon="graduation-cap" size={18} className="text-[#B88A44]" />
@@ -324,6 +341,26 @@ const KelolaTholibah = ({ onBack }) => {
                     <h4 className="font-bold text-[14px] leading-tight mb-1 z-10 text-emerald-800">Alumni RQS</h4>
                     <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-md mt-1 z-10 border border-white/50">
                         <span className="text-[11px] font-bold text-emerald-700">{getTholibahByClass('alumni').length} Alumni Terdaftar</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-8">
+                <h3 className="font-bold text-[#4A1C14] mb-3 flex items-center gap-2 border-b border-[#E8D2A6]/50 pb-2">
+                    <PhosphorIcon icon="users" size={18} className="text-[#B88A44]" />
+                    Data Tholibah Aktif
+                </h3>
+                <div 
+                    onClick={() => {
+                        setSelectedClass({ id: 'all_active', name: 'Data Tholibah Aktif', desc: 'Seluruh tholibah yang masih aktif di RQS', color: 'bg-blue-50 text-blue-700' });
+                        setViewMode('class_detail');
+                    }}
+                    className="p-4 rounded-2xl shadow-sm border cursor-pointer hover:scale-[1.02] transition-transform bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 flex flex-col items-center justify-center text-center h-24 relative overflow-hidden"
+                >
+                    <PhosphorIcon icon="users-three" size={40} className="opacity-10 absolute -right-2 -bottom-2 text-blue-700" />
+                    <h4 className="font-bold text-[14px] leading-tight mb-1 z-10 text-blue-800">Semua Tholibah Aktif</h4>
+                    <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-md mt-1 z-10 border border-white/50">
+                        <span className="text-[11px] font-bold text-blue-700">{tholibahList.filter(t => t.role !== 'alumni').length} Tholibah Terdaftar</span>
                     </div>
                 </div>
             </div>
@@ -356,7 +393,7 @@ const KelolaTholibah = ({ onBack }) => {
                     <div className="text-center p-8 bg-white rounded-2xl border border-dashed border-[#E8D2A6]">
                         <PhosphorIcon icon="users-slash" size={32} className="mx-auto text-[#B88A44]/50 mb-2" />
                         <p className="text-[#4A1C14]/60 text-[11px]">
-                            {selectedClass.id === 'alumni' ? 'Belum ada alumni.' : 'Belum ada tholibah di kelas ini.'}
+                            {selectedClass.id === 'alumni' ? 'Belum ada alumni.' : selectedClass.id === 'all_active' ? 'Belum ada tholibah.' : 'Belum ada tholibah di kelas ini.'}
                         </p>
                     </div>
                 ) : (
@@ -370,6 +407,12 @@ const KelolaTholibah = ({ onBack }) => {
                                     <div>
                                         <h4 className="font-bold text-[#4A1C14] text-[13px]">{student.name}</h4>
                                         <p className="text-[10px] text-gray-500 mt-0.5">{student.phone}</p>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {student.classes && student.classes.map(cId => {
+                                                const c = classesList.find(x => x.id === cId);
+                                                return c ? <span key={cId} className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${c.color.split(' ')[0]} ${c.color.split(' ')[1]}`}>{c.name}</span> : null;
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
                                 <button 
@@ -395,7 +438,6 @@ const KelolaTholibah = ({ onBack }) => {
         
         return (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="px-5 mt-4 pb-10">
-                {/* Profile Card */}
                 <div className="bg-white p-5 rounded-3xl shadow-sm border border-[#E8D2A6]/50 relative overflow-hidden mb-5">
                     <div className="absolute top-0 left-0 w-full h-16 bg-[#B88A44]"></div>
                     <div className="relative z-10 flex flex-col items-center mt-4">
@@ -437,7 +479,7 @@ const KelolaTholibah = ({ onBack }) => {
                                 className="flex-1 bg-white border border-[#E8D2A6] py-2 rounded-xl text-[11px] font-bold text-[#4A1C14] flex items-center justify-center gap-1 hover:bg-gray-50"
                             >
                                 <PhosphorIcon icon="arrows-left-right" size={14} /> 
-                                {selectedStudent.role === 'alumni' ? 'Masukkan ke Kelas' : 'Pindah Kelas'}
+                                {selectedStudent.role === 'alumni' ? 'Masukkan ke Kelas' : 'Atur Kelas'}
                             </button>
                             {selectedStudent.role !== 'alumni' && (
                                 <button className="flex-1 bg-white border border-red-200 py-2 rounded-xl text-[11px] font-bold text-red-600 flex items-center justify-center gap-1 hover:bg-red-50">
@@ -453,7 +495,6 @@ const KelolaTholibah = ({ onBack }) => {
                     </div>
                 </div>
 
-                {/* Quick Stats */}
                 <h4 className="font-bold text-[#4A1C14] text-sm mb-3">Statistik Tholibah</h4>
                 <div className="grid grid-cols-2 gap-3 mb-5">
                     <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex flex-col items-center text-center">
@@ -468,7 +509,6 @@ const KelolaTholibah = ({ onBack }) => {
                     </div>
                 </div>
 
-                {/* Action Menus */}
                 <h4 className="font-bold text-[#4A1C14] text-sm mb-3">Menu Kelola</h4>
                 <div className="space-y-3">
                     <button onClick={() => setViewMode('absen_detail')} className="w-full bg-white p-4 rounded-2xl shadow-sm border border-[#E8D2A6]/50 flex items-center justify-between hover:bg-gray-50 transition-colors">
@@ -511,7 +551,6 @@ const KelolaTholibah = ({ onBack }) => {
                     </button>
                 </div>
 
-                {/* Danger Zone */}
                 <h4 className="font-bold text-red-600 text-sm mt-8 mb-3 flex items-center gap-2">
                     <PhosphorIcon icon="warning-circle" size={18} weight="fill" />
                     Zona Berbahaya
@@ -562,20 +601,28 @@ const KelolaTholibah = ({ onBack }) => {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {studentStats.absensiList.map((a, i) => {
-                        const cls = CLASSES.find(c => c.id === a.classId);
-                        return (
-                            <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8D2A6]/50 flex items-center gap-3">
-                                <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
-                                    <PhosphorIcon icon="calendar-check" size={24} weight="fill" />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-[#4A1C14] text-sm">{new Date(a.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
-                                    <p className="text-[11px] text-gray-500">Hadir di {cls ? cls.name : 'Kelas'}</p>
-                                </div>
+                    {studentStats.absensiList.map((a, i) => (
+                        <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8D2A6]/50 flex items-center gap-3">
+                            <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
+                                <PhosphorIcon icon="calendar-check" size={24} weight="fill" />
                             </div>
-                        );
-                    })}
+                            <div>
+                                <h4 className="font-bold text-[#4A1C14] text-sm">{new Date(a.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+                                {(() => {
+                                    const cls = classesList.find(c => c.id === a.classId);
+                                    return cls ? (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${cls.color.split(' ')[0]} ${cls.color.split(' ')[1]}`}>
+                                            {cls.name}
+                                        </span>
+                                    ) : (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-gray-100 text-gray-500`}>
+                                            Kelas Dihapus
+                                        </span>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
         </motion.div>
@@ -624,7 +671,6 @@ const KelolaTholibah = ({ onBack }) => {
 
     return (
         <div className="pb-28 animate-in fade-in duration-500 bg-[#FDFBF7] min-h-screen">
-            {/* Header */}
             <div className="flex items-center p-4 bg-white sticky top-0 z-20 shadow-sm border-b border-[#E8D2A6]/30">
                 <button 
                     onClick={() => {
@@ -665,7 +711,6 @@ const KelolaTholibah = ({ onBack }) => {
                 {viewMode === 'infaq_detail' && <motion.div key="infaq">{renderInfaqDetail()}</motion.div>}
             </AnimatePresence>
 
-            {/* Modal Masukkan Kelas */}
             <AnimatePresence>
                 {isAssignModalOpen && studentToAssign && (
                     <motion.div 
@@ -690,25 +735,27 @@ const KelolaTholibah = ({ onBack }) => {
                                 </div>
                             </div>
                             
-                            <div className="p-5 overflow-y-auto bg-[#FDFBF7] flex-1 space-y-3">
-                                {CLASSES.map(cls => (
-                                    <button 
-                                        key={cls.id}
-                                        onClick={() => handleAssignClass(cls.id)}
-                                        className={`w-full text-left p-4 rounded-xl border border-[#E8D2A6]/50 hover:border-[#B88A44] hover:bg-[#FCF7E8] transition-all flex items-center justify-between bg-white shadow-sm`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${cls.color.split(' ')[0]} ${cls.color.split(' ')[1]}`}>
-                                                <PhosphorIcon icon="books" size={20} />
+                            <div className="p-5 overflow-y-auto bg-[#FDFBF7] flex-1">
+                                <label className="block text-[11px] font-bold text-[#4A1C14]/70 mb-2">Pilih Kelas (Bisa Lebih Dari Satu)</label>
+                                <div className="grid grid-cols-2 gap-2 hide-scrollbar">
+                                    {classesList.map(cls => (
+                                        <label key={cls.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${selectedClassesForAssign.includes(cls.id) ? 'bg-[#FCF7E8] border-[#B88A44] shadow-sm' : 'bg-white border-[#E8D2A6]/50 hover:bg-gray-50'}`}>
+                                            <input type="checkbox" className="hidden" checked={selectedClassesForAssign.includes(cls.id)} onChange={() => toggleClassForAssign(cls.id)} />
+                                            <div className={`w-5 h-5 rounded flex items-center justify-center border ${selectedClassesForAssign.includes(cls.id) ? 'bg-[#B88A44] border-[#B88A44] text-white' : 'border-gray-300'}`}>
+                                                {selectedClassesForAssign.includes(cls.id) && <PhosphorIcon icon="check" size={14} weight="bold" />}
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold text-[#4A1C14] text-sm">{cls.name}</h4>
-                                                <p className="text-[10px] text-gray-500 line-clamp-1">{cls.desc}</p>
-                                            </div>
-                                        </div>
-                                        <PhosphorIcon icon="caret-right" size={16} className="text-[#B88A44]" />
-                                    </button>
-                                ))}
+                                            <span className={`text-[11px] font-bold ${selectedClassesForAssign.includes(cls.id) ? 'text-[#4A1C14]' : 'text-[#4A1C14]/70'}`}>{cls.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="p-4 bg-white border-t border-[#E8D2A6]/30">
+                                <button 
+                                    onClick={handleSaveAssignClasses}
+                                    className="w-full bg-[#B88A44] hover:bg-[#9c7438] text-white font-bold py-3 rounded-xl shadow-md transition-colors text-[13px]"
+                                >
+                                    Simpan Perubahan
+                                </button>
                             </div>
                         </motion.div>
                     </motion.div>

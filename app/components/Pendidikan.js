@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
-import { CLASSES } from './MockData';
+import { CLASSES as INITIAL_CLASSES } from './MockData';
 
 const getLocalDateString = (dateObj = new Date()) => {
     return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 };
 
 const PendidikanScreen = ({ currentUser }) => {
-    const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
+    const [classesList, setClassesList] = useState([]);
+    const [selectedClass, setSelectedClass] = useState(null);
     const [pengajarList, setPengajarList] = useState([]);
     const [tholibahList, setTholibahList] = useState([]);
     const [schedules, setSchedules] = useState([]);
@@ -23,6 +24,21 @@ const PendidikanScreen = ({ currentUser }) => {
 
     useEffect(() => {
         const loadData = () => {
+            let currentClasses = INITIAL_CLASSES;
+            const savedClasses = localStorage.getItem('rqs_classes');
+            if (savedClasses) {
+                currentClasses = JSON.parse(savedClasses);
+            }
+            setClassesList(currentClasses);
+            
+            // Set selectedClass if it's currently null or not in the updated list
+            setSelectedClass(prev => {
+                if (!prev || !currentClasses.find(c => c.id === prev.id)) {
+                    return currentClasses.length > 0 ? currentClasses[0] : null;
+                }
+                return currentClasses.find(c => c.id === prev.id);
+            });
+
             const savedPengajar = localStorage.getItem('rqs_pengajar');
             if (savedPengajar) setPengajarList(JSON.parse(savedPengajar));
 
@@ -31,11 +47,11 @@ const PendidikanScreen = ({ currentUser }) => {
                 setTholibahList(JSON.parse(savedTholibah));
             } else {
                 const initialData = [
-                    { id: '1', name: 'Aisyah Putri', phone: '081234567890', classId: null, joined: '2026-06-20' },
-                    { id: '2', name: 'Siti Aminah', phone: '081298765432', classId: null, joined: '2026-06-25' },
-                    { id: '3', name: 'Fatimah Az-Zahra', phone: '081311112222', classId: 'tahsin_pemula', joined: '2026-01-10' },
-                    { id: '4', name: 'Khadijah', phone: '081333334444', classId: 'tahsin_teori', joined: '2026-02-15' },
-                    { id: '5', name: 'Zainab', phone: '081455556666', classId: 'tahfidz', joined: '2025-10-05' },
+                    { id: '1', name: 'Aisyah Putri', phone: '081234567890', classes: [], joined: '2026-06-20' },
+                    { id: '2', name: 'Siti Aminah', phone: '081298765432', classes: [], joined: '2026-06-25' },
+                    { id: '3', name: 'Fatimah Az-Zahra', phone: '081311112222', classes: ['tahsin_pemula'], joined: '2026-01-10' },
+                    { id: '4', name: 'Khadijah', phone: '081333334444', classes: ['tahsin_teori'], joined: '2026-02-15' },
+                    { id: '5', name: 'Zainab', phone: '081455556666', classes: ['tahfidz'], joined: '2025-10-05' },
                 ];
                 setTholibahList(initialData);
                 localStorage.setItem('rqs_tholibah', JSON.stringify(initialData));
@@ -102,7 +118,7 @@ const PendidikanScreen = ({ currentUser }) => {
 
             const newProgressMap = {};
 
-            CLASSES.forEach(cls => {
+            classesList.forEach(cls => {
                 // Find today's schedule explicitly for attendance clearing logic
                 const todaySchedule = schedules.find(s => s.classId === cls.id && s.date === todayStr);
                 
@@ -172,11 +188,11 @@ const PendidikanScreen = ({ currentUser }) => {
         updateProgress();
         const interval = setInterval(updateProgress, 10000);
         return () => clearInterval(interval);
-    }, [schedules, teacherPresentRecord]);
+    }, [schedules, teacherPresentRecord, classesList]);
 
     const myTholibahData = tholibahList.find(t => t.id === currentUser?.id);
-    const myClassId = myTholibahData?.classId;
-    const isMyClass = currentUser?.role === 'management' ? true : selectedClass.id === myClassId;
+    const myClasses = myTholibahData?.classes || [];
+    const isMyClass = currentUser?.role === 'management' ? true : myClasses.includes(selectedClass?.id);
 
     const handlePlayClick = () => {
         if (!isMyClass) {
@@ -257,7 +273,7 @@ const PendidikanScreen = ({ currentUser }) => {
             .map(u => ({ id: u.id, name: u.nama, role: 'Management' }));
             
         const studentsInClass = tholibahList
-            .filter(t => t.classId === selectedClass.id)
+            .filter(t => t.classes && t.classes.includes(selectedClass.id))
             .map(t => ({ ...t, role: 'Tholibah' }));
             
         const allAttendees = [...managementAttendees, ...studentsInClass];
@@ -390,6 +406,8 @@ const PendidikanScreen = ({ currentUser }) => {
         );
     };
 
+    if (!selectedClass) return <div className="p-5 text-center mt-10 text-gray-500">Memuat data kelas...</div>;
+
     if (inClassView) return renderClassDetail();
 
     const activeSchedule = getActiveSchedule(selectedClass.id);
@@ -449,7 +467,7 @@ const PendidikanScreen = ({ currentUser }) => {
                                 <div className="flex justify-between items-center">
                                     <span className="text-[11px] font-bold text-[#4A1C14]/70">Tholibah Terdaftar</span>
                                     <span className="text-[10px] font-bold text-[#4A1C14] bg-white px-2 py-0.5 rounded-md shadow-sm border border-[#E8D2A6]/30">
-                                        {tholibahList.filter(t => t.classId === selectedClass.id).length} Orang
+                                        {tholibahList.filter(t => t.classes && t.classes.includes(selectedClass.id)).length} Orang
                                     </span>
                                 </div>
                                 
@@ -490,7 +508,7 @@ const PendidikanScreen = ({ currentUser }) => {
             <div className="px-5 mt-6 relative">
                 <h4 className="text-sm font-bold text-[#4A1C14] mb-2 px-1">Daftar Kelas RQS</h4>
                 <div className="flex overflow-x-auto gap-4 pb-8 pt-4 px-1 hide-scrollbar snap-x items-center">
-                    {CLASSES.map((cls, idx) => {
+                    {classesList.map((cls, idx) => {
                         const rotations = ['-rotate-3', 'rotate-2', '-rotate-2', 'rotate-3', '-rotate-1', 'rotate-1', '-rotate-3'];
                         const translates = ['-translate-y-2', 'translate-y-3', '-translate-y-1', 'translate-y-2', '-translate-y-3', 'translate-y-1', '-translate-y-2'];
 
