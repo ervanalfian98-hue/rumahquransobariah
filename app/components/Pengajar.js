@@ -1,51 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
 import SetorHafalanMaster from './SetorHafalanMaster';
-
-const KELAS_LIST = [
-    { id: 'tahsin_pemula', name: 'Tahsin Pemula' },
-    { id: 'tahsin_teori', name: 'Tahsin Teori' },
-    { id: 'pra_tahfidz', name: 'Pra Tahfidz' },
-    { id: 'tahfidz', name: 'Tahfidz' },
-    { id: 'b_arab_tamyiz', name: 'B. Arab Tamyiz' },
-    { id: 'ulc', name: 'ULC' },
-    { id: 'matan', name: 'Matan' }
-];
+import { supabase } from '../lib/supabaseClient';
 
 const Pengajar = ({ setActiveTab }) => {
     const [pengajarList, setPengajarList] = useState([]);
     const [users, setUsers] = useState([]);
+    const [classesList, setClassesList] = useState([]);
     const [selectedUstadz, setSelectedUstadz] = useState(null);
 
-    const loadPengajar = () => {
-        const savedUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        setUsers(savedUsers);
+    const loadPengajar = async () => {
+        // Load users from Supabase profiles
+        const { data: usersData } = await supabase.from('profiles').select('*').eq('role', 'management');
+        if (usersData) setUsers(usersData);
 
-        const saved = localStorage.getItem('rqs_pengajar');
-        if (saved) {
-            setPengajarList(JSON.parse(saved));
-        } else {
-            // Default mock data if empty
-            const initialData = [
-                { id: '1', name: 'Lia', gender: 'ustadzah', classes: ['tahsin_teori'] }
-            ];
-            setPengajarList(initialData);
+        // Load classes
+        const { data: classesData } = await supabase.from('rqs_classes').select('*');
+        if (classesData) setClassesList(classesData);
+
+        // Load pengajar
+        const { data: pengajarData } = await supabase.from('rqs_pengajar').select('*').order('created_at', { ascending: true });
+        if (pengajarData) {
+            setPengajarList(pengajarData.map(p => ({...p, userId: p.user_id})));
         }
     };
 
     useEffect(() => {
         loadPengajar();
-        window.addEventListener('storage', loadPengajar);
-        window.addEventListener('rqs-pengajar-updated', loadPengajar);
-        return () => {
-            window.removeEventListener('storage', loadPengajar);
-            window.removeEventListener('rqs-pengajar-updated', loadPengajar);
-        };
     }, []);
 
     const getClassName = (id) => {
-        const cls = KELAS_LIST.find(c => c.id === id);
-        return cls ? cls.name : id;
+        const cls = classesList.find(c => c.id === id);
+        if (cls) return cls.name;
+        // fallback for static classes if not in db
+        const staticNames = {
+            'tahsin_pemula': 'Tahsin Pemula', 'tahsin_teori': 'Tahsin Teori', 'pra_tahfidz': 'Pra Tahfidz',
+            'tahfidz': 'Tahfidz', 'b_arab_tamyiz': 'B. Arab Tamyiz', 'ulc': 'ULC', 'matan': 'Matan'
+        };
+        return staticNames[id] || id;
     };
 
     // Jika ada guru yang dipilih, buka SetorHafalanMaster
@@ -119,7 +111,7 @@ const Pengajar = ({ setActiveTab }) => {
                                     <div className="mb-2"></div>
                                 )}
                                 <div className="w-full mt-auto flex flex-col gap-1.5 pt-2 border-t border-gray-100">
-                                    {p.classes.map(id => (
+                                    {(p.classes || []).map(id => (
                                         <div key={id} className="w-full bg-teal-50 border border-teal-100 text-teal-700 text-[9px] font-bold py-1.5 px-2 rounded-lg text-center leading-tight">
                                             {getClassName(id)}
                                         </div>

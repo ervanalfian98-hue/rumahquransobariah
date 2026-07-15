@@ -17,11 +17,6 @@ const initialDonations = [
     { id: 12, name: "Agus", program: "Pengembangan Aplikasi", amount: 100000, date: new Date(Date.now() - 240 * 3600000).toISOString(), desc: "Semangat ngoding" }
 ];
 
-const banks = [
-    { id: 'bsi', name: 'BSI (Bank Syariah Indonesia)', account: '1234567890', owner: 'Yayasan Rumah Quran Sobariah' },
-    { id: 'bca', name: 'BCA Syariah', account: '0987654321', owner: 'Yayasan RQS' },
-    { id: 'mandiri', name: 'Bank Mandiri', account: '1122334455', owner: 'Rumah Quran Sobariah' }
-];
 
 const formatTimeAgo = (dateString) => {
     const diff = Date.now() - new Date(dateString).getTime();
@@ -38,6 +33,7 @@ const Donasi = ({ setActiveTab }) => {
     const [step, setStep] = useState(0); 
     const [donations, setDonations] = useState([]);
     const [showAllDonors, setShowAllDonors] = useState(false);
+    const [rekeningList, setRekeningList] = useState([]);
     
     // Load donations from Supabase
     useEffect(() => {
@@ -70,6 +66,10 @@ const Donasi = ({ setActiveTab }) => {
                     setDonations(data);
                 }
             }
+            
+            // Load Rekening
+            const { data: rekData } = await supabase.from('rqs_rekening').select('*').order('created_at', { ascending: false });
+            if (rekData) setRekeningList(rekData);
         };
         fetchDonations();
     }, []);
@@ -343,7 +343,7 @@ const Donasi = ({ setActiveTab }) => {
                             {step === 2 && (
                                 <div className="flex flex-col gap-3 animate-in slide-in-from-right-4 duration-300">
                                     <p className="text-sm text-gray-600 mb-2">Pilih rekening tujuan transfer donasi Anda:</p>
-                                    {banks.map(bank => (
+                                    {rekeningList.map(bank => (
                                         <button 
                                             key={bank.id}
                                             onClick={() => { setFormData({...formData, bank: bank}); setStep(3); }}
@@ -353,7 +353,7 @@ const Donasi = ({ setActiveTab }) => {
                                                 <PhosphorIcon icon="bank" size={24} className="text-gray-600 group-hover:text-emerald-600" weight="duotone" />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-gray-800 text-sm group-hover:text-emerald-700 transition-colors">{bank.name}</h4>
+                                                <h4 className="font-bold text-gray-800 text-sm group-hover:text-emerald-700 transition-colors">{bank.bank_name}</h4>
                                                 <p className="text-[11px] text-gray-500 mt-0.5">Proses otomatis</p>
                                             </div>
                                             <div className="ml-auto text-gray-300 group-hover:text-emerald-500 transition-colors">
@@ -372,11 +372,11 @@ const Donasi = ({ setActiveTab }) => {
                                             <PhosphorIcon icon="wallet" size={100} weight="fill" />
                                         </div>
                                         <p className="text-xs text-amber-800 font-bold mb-1 relative z-10">Silakan transfer ke:</p>
-                                        <p className="text-sm font-bold text-gray-800 relative z-10">{formData.bank.name}</p>
+                                        <p className="text-sm font-bold text-gray-800 relative z-10">{formData.bank.bank_name}</p>
                                         <div className="flex justify-between items-center mt-2 mb-1 relative z-10">
-                                            <p className="text-2xl font-mono text-gray-900 tracking-wider font-bold">{formData.bank.account}</p>
+                                            <p className="text-2xl font-mono text-gray-900 tracking-wider font-bold">{formData.bank.account_number}</p>
                                         </div>
-                                        <p className="text-[11px] text-gray-600 relative z-10">a.n. {formData.bank.owner}</p>
+                                        <p className="text-[11px] text-gray-600 relative z-10">a.n. {formData.bank.account_name}</p>
                                         
                                         <button 
                                             onClick={(e) => {
