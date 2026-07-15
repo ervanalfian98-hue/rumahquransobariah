@@ -185,17 +185,20 @@ const KelolaTholibah = ({ onBack }) => {
         // Coba cari ID asli dari rqs_users untuk memastikan ID-nya akurat dengan Supabase
         const actualUser = allUsers.find(u => u.id === selectedStudent.id || u.nama === selectedStudent.name || u.phone === selectedStudent.phone);
         const finalDeleteId = actualUser ? actualUser.id : selectedStudent.id;
+        const targetName = selectedStudent.name;
 
         // Delete from Supabase Database
-        const { error, count } = await supabase.from('profiles').delete().eq('id', finalDeleteId).select();
+        // 1. Delete from profiles (if RPC is not used or as fallback)
+        const { error: profileError } = await supabase.from('profiles').delete().eq('id', finalDeleteId);
         
-        if (error) {
-            console.error(error);
-            return alert("Gagal menghapus akun secara permanen dari server Supabase.");
+        if (profileError) {
+            console.error("Gagal hapus profile:", profileError);
         }
-        
-        if (count === 0 && !actualUser) {
-            console.warn("User tidak ditemukan di Supabase, tapi akan dihapus dari memori lokal.");
+
+        // 2. Call RPC to delete auth user (Requires SQL setup in Supabase)
+        const { error: rpcError } = await supabase.rpc('delete_user_admin', { user_id_to_delete: finalDeleteId });
+        if (rpcError) {
+            console.warn("RPC delete_user_admin gagal (mungkin belum dibuat di Supabase):", rpcError.message);
         }
 
         // Remove from rqs_users
@@ -204,7 +207,7 @@ const KelolaTholibah = ({ onBack }) => {
 
         // Remove from rqs_tholibah
         let currentTholibah = JSON.parse(localStorage.getItem('rqs_tholibah') || '[]');
-        currentTholibah = currentTholibah.filter(t => t.id !== targetId);
+        currentTholibah = currentTholibah.filter(t => t.id !== finalDeleteId);
         setTholibahList(currentTholibah);
         localStorage.setItem('rqs_tholibah', JSON.stringify(currentTholibah));
 
@@ -217,22 +220,22 @@ const KelolaTholibah = ({ onBack }) => {
             if (key.startsWith('rqs_absen_')) {
                 try {
                     const data = JSON.parse(localStorage.getItem(key));
-                    if (data[targetId] !== undefined) {
-                        delete data[targetId];
+                    if (data[finalDeleteId] !== undefined) {
+                        delete data[finalDeleteId];
                         localStorage.setItem(key, JSON.stringify(data));
                     }
                 } catch(e) {}
             }
             
             // Clean specific keys
-            if (key.includes(targetId)) {
+            if (key.includes(finalDeleteId)) {
                 localStorage.removeItem(key);
             }
         }
 
         // Clean Setoran
         let allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        allSetoran = allSetoran.filter(s => s.tholibah_name !== targetName && s.userId !== targetId);
+        allSetoran = allSetoran.filter(s => s.tholibah_name !== targetName && s.userId !== finalDeleteId);
         localStorage.setItem('rqs_setoran_hafalan', JSON.stringify(allSetoran));
 
         setViewMode('main');

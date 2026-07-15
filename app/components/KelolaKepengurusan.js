@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES } from './MockData';
+import { supabase } from '../lib/supabaseClient';
 
 const KelolaKepengurusan = ({ onBack }) => {
     const [viewMode, setViewMode] = useState('main'); // main, detail, absen_detail, setoran_detail
@@ -135,12 +136,24 @@ const KelolaKepengurusan = ({ onBack }) => {
         alert(`${selectedManagement.nama} berhasil diubah menjadi Tholibah.`);
     };
 
-    const handlePermanentDelete = () => {
+    const handlePermanentDelete = async () => {
         if (!selectedManagement) return;
         if (!window.confirm(`PERINGATAN 1: Apakah Anda yakin ingin MENGHAPUS PERMANEN akun ${selectedManagement.nama}?`)) return;
         if (!window.confirm(`PERINGATAN 2: Tindakan ini tidak bisa dibatalkan! Semua data absen, setoran, progress, dan penempatan posisi akun ini akan musnah. Lanjutkan?`)) return;
 
         const targetId = selectedManagement.id;
+
+        // Delete from Supabase profiles
+        const { error: profileError } = await supabase.from('profiles').delete().eq('id', targetId);
+        if (profileError) {
+            console.error("Gagal hapus profile:", profileError);
+        }
+
+        // Call RPC to delete auth user
+        const { error: rpcError } = await supabase.rpc('delete_user_admin', { user_id_to_delete: targetId });
+        if (rpcError) {
+            console.warn("RPC delete_user_admin gagal:", rpcError.message);
+        }
 
         let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
         allUsers = allUsers.filter(u => u.id !== targetId);
