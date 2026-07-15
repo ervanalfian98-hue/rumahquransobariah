@@ -140,6 +140,19 @@ const QuranScreen = ({ currentUser }) => {
         setTargetHafalan('');
     };
 
+    const handleBatalSetor = async (id) => {
+        if (!confirm('Yakin ingin membatalkan antrian setoran ini?')) return;
+        
+        const { error } = await supabase.from('rqs_setoran_hafalan').delete().eq('id', id);
+        
+        if (error) {
+            console.error(error);
+            return alert("Gagal membatalkan setoran.");
+        }
+
+        window.dispatchEvent(new Event('rqs-setoran-updated'));
+    };
+
     // Web Speech API states
     const [wordColors, setWordColors] = useState({});
     const recognitionRef = useRef(null);
@@ -765,9 +778,17 @@ const QuranScreen = ({ currentUser }) => {
                             </div>
                             <p className="text-xs font-bold text-[#4A1C14] mb-1">Target: {activeSetoran.surat_target}</p>
                             {activeSetoran.status === 'menunggu' ? (
-                                <p className="text-[10px] text-[#4A1C14]/70 flex items-center gap-1 mt-2">
-                                    <PhosphorIcon icon="hourglass-high" className="animate-spin" /> Menunggu ustadz/ustadzah menyimak...
-                                </p>
+                                <div className="flex justify-between items-end mt-2">
+                                    <p className="text-[10px] text-[#4A1C14]/70 flex items-center gap-1">
+                                        <PhosphorIcon icon="hourglass-high" className="animate-spin" /> Menunggu ustadz/ustadzah menyimak...
+                                    </p>
+                                    <button 
+                                        onClick={() => handleBatalSetor(activeSetoran.id)}
+                                        className="text-[10px] bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-200 transition-colors"
+                                    >
+                                        Batalkan
+                                    </button>
+                                </div>
                             ) : (
                                 <p className="text-[10px] text-emerald-700 flex items-center gap-1 mt-2 font-medium">
                                     <PhosphorIcon icon="headphones" size={14} weight="fill" /> Disimak oleh: {activeSetoran.ustadz_name}

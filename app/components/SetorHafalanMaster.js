@@ -7,6 +7,7 @@ const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
     const [setoranList, setSetoranList] = useState([]);
     const [activeActionId, setActiveActionId] = useState(null);
     const [catatan, setCatatan] = useState('');
+    const [currentUser, setCurrentUser] = useState(null);
 
     const loadSetoran = async () => {
         const { data: setoranData } = await supabase.from('rqs_setoran_hafalan').select('*').order('tanggal', { ascending: false });
@@ -25,6 +26,11 @@ const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
     };
 
     useEffect(() => {
+        const userStr = localStorage.getItem('rqs_currentUser');
+        if (userStr) {
+            setCurrentUser(JSON.parse(userStr));
+        }
+
         loadSetoran();
         window.addEventListener('storage', loadSetoran);
         window.addEventListener('rqs-setoran-updated', loadSetoran);
@@ -108,27 +114,31 @@ const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
                                         <p className="text-[11px] font-bold text-[#4A1C14]">Target: {s.surat_target}</p>
                                     </div>
                                     
-                                    {s.status === 'menunggu' ? (
-                                        <button 
-                                            onClick={() => handleSimak(s.id)}
-                                            className="w-full bg-[#B88A44] text-white text-[11px] font-bold py-2.5 rounded-lg shadow-sm hover:bg-[#A37936] transition-colors flex items-center justify-center gap-1.5"
-                                        >
-                                            <PhosphorIcon icon="headphones" size={16} weight="fill" />
-                                            Simak Hafalan Ini
-                                        </button>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] text-emerald-700 font-medium mb-1">
-                                                Anda sedang menyimak hafalan ini.
-                                            </p>
-                                            <button 
-                                                onClick={() => setActiveActionId(s.id)}
-                                                className="w-full bg-emerald-600 text-white text-[11px] font-bold py-2.5 rounded-lg shadow-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5"
-                                            >
-                                                <PhosphorIcon icon="check-square-offset" size={16} weight="fill" />
-                                                Selesai & Beri Catatan
-                                            </button>
-                                        </div>
+                                    {currentUser?.role === 'management' && (
+                                        <>
+                                            {s.status === 'menunggu' ? (
+                                                <button 
+                                                    onClick={() => handleSimak(s.id)}
+                                                    className="w-full bg-[#B88A44] text-white text-[11px] font-bold py-2.5 rounded-lg shadow-sm hover:bg-[#A37936] transition-colors flex items-center justify-center gap-1.5"
+                                                >
+                                                    <PhosphorIcon icon="headphones" size={16} weight="fill" />
+                                                    Simak Hafalan Ini
+                                                </button>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] text-emerald-700 font-medium mb-1">
+                                                        Anda sedang menyimak hafalan ini.
+                                                    </p>
+                                                    <button 
+                                                        onClick={() => setActiveActionId(s.id)}
+                                                        className="w-full bg-emerald-600 text-white text-[11px] font-bold py-2.5 rounded-lg shadow-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <PhosphorIcon icon="check-square-offset" size={16} weight="fill" />
+                                                        Selesai & Beri Catatan
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             ))}
