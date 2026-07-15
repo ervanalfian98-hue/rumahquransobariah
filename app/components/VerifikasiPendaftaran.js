@@ -25,10 +25,6 @@ const VerifikasiPendaftaran = ({ onBack }) => {
                 verified: u.verified
             }));
             setPendingUsers(formatted);
-        } else {
-            const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-            const pending = users.filter(u => u.role === 'tholibah' && u.verified === false);
-            setPendingUsers(pending);
         }
     };
 
@@ -39,15 +35,7 @@ const VerifikasiPendaftaran = ({ onBack }) => {
             return alert("Gagal memverifikasi akun di server Supabase.");
         }
         
-        // Update local storage so other components know it's verified too
-        const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const updatedUsers = users.map(u => {
-            if (u.id === userId) {
-                return { ...u, verified: true };
-            }
-            return u;
-        });
-        localStorage.setItem('rqs_users', JSON.stringify(updatedUsers));
+
         
         alert("Pendaftaran berhasil diverifikasi! Tholibah sekarang sudah bisa Login.");
         loadPendingUsers();
@@ -61,11 +49,7 @@ const VerifikasiPendaftaran = ({ onBack }) => {
                 console.error(error);
                 return alert("Gagal menghapus akun di server Supabase.");
             }
-            
-            const users = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-            const updatedUsers = users.filter(u => u.id !== userId);
-            localStorage.setItem('rqs_users', JSON.stringify(updatedUsers));
-            
+
             loadPendingUsers();
         }
     };

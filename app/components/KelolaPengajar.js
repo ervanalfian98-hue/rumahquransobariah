@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES as INITIAL_CLASSES } from './MockData';
+import { supabase } from '../lib/supabaseClient';
 
 const KelolaPengajar = ({ onBack }) => {
     const [pengajarList, setPengajarList] = useState([]);
@@ -16,28 +17,32 @@ const KelolaPengajar = ({ onBack }) => {
     const [gender, setGender] = useState('ustadzah');
     const [selectedClasses, setSelectedClasses] = useState([]);
 
-    const loadData = () => {
+    const loadData = async () => {
         // Load all users to find management
-        const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const mngUsers = allUsers.filter(u => u.role === 'management' && u.verified !== false);
-        setManagementUsers(mngUsers);
+        const { data: usersData } = await supabase.from('profiles').select('*').eq('role', 'management').eq('verified', true);
+        if (usersData) {
+            setManagementUsers(usersData);
+        }
 
         // Load Pengajar
-        const saved = localStorage.getItem('rqs_pengajar');
-        if (saved) {
-            setPengajarList(JSON.parse(saved));
-        } else {
-            const initialData = [
-                { id: '1', name: 'Lia', gender: 'ustadzah', classes: ['tahsin_teori'] }
-            ];
-            localStorage.setItem('rqs_pengajar', JSON.stringify(initialData));
-            setPengajarList(initialData);
+        const { data: pengajarData, error: pengajarError } = await supabase.from('rqs_pengajar').select('*').order('created_at', { ascending: true });
+        
+        if (!pengajarError && pengajarData) {
+            if (pengajarData.length === 0) {
+                const initialData = [
+                    { id: '1', name: 'Lia', gender: 'ustadzah', classes: ['tahsin_teori'] }
+                ];
+                const { data: inserted } = await supabase.from('rqs_pengajar').insert(initialData).select();
+                if (inserted) setPengajarList(inserted.map(p => ({...p, userId: p.user_id})));
+            } else {
+                setPengajarList(pengajarData.map(p => ({...p, userId: p.user_id})));
+            }
         }
 
         // Load Classes
-        const savedClasses = localStorage.getItem('rqs_classes');
-        if (savedClasses) {
-            setClassesList(JSON.parse(savedClasses));
+        const { data: classesData, error: classesError } = await supabase.from('rqs_classes').select('*');
+        if (!classesError && classesData) {
+            setClassesList(classesData.length > 0 ? classesData : INITIAL_CLASSES);
         } else {
             setClassesList(INITIAL_CLASSES);
         }
@@ -55,39 +60,34 @@ const KelolaPengajar = ({ onBack }) => {
         };
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!nama.trim()) return alert("Nama pengajar tidak boleh kosong.");
         if (selectedClasses.length === 0) return alert("Pilih minimal satu kelas untuk diajar.");
 
-        const saved = JSON.parse(localStorage.getItem('rqs_pengajar') || '[]');
-        let updated;
+        const newPengajar = {
+            id: editingId || Date.now().toString(),
+            name: nama,
+            user_id: userId || null,
+            gender,
+            classes: selectedClasses
+        };
 
         if (editingId) {
-            updated = saved.map(p => p.id === editingId ? { ...p, name: nama, gender, classes: selectedClasses, userId } : p);
+            await supabase.from('rqs_pengajar').update(newPengajar).eq('id', editingId);
         } else {
-            const newPengajar = {
-                id: Date.now().toString(),
-                name: nama,
-                userId,
-                gender,
-                classes: selectedClasses
-            };
-            updated = [...saved, newPengajar];
+            await supabase.from('rqs_pengajar').insert([newPengajar]);
         }
 
-        localStorage.setItem('rqs_pengajar', JSON.stringify(updated));
-        window.dispatchEvent(new Event('rqs-pengajar-updated'));
+        loadData();
         
         setIsModalOpen(false);
         resetForm();
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm("Yakin ingin menghapus pengajar ini?")) {
-            const saved = JSON.parse(localStorage.getItem('rqs_pengajar') || '[]');
-            const updated = saved.filter(p => p.id !== id);
-            localStorage.setItem('rqs_pengajar', JSON.stringify(updated));
-            window.dispatchEvent(new Event('rqs-pengajar-updated'));
+            await supabase.from('rqs_pengajar').delete().eq('id', id);
+            loadData();
         }
     };
 

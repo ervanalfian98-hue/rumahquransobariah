@@ -24,26 +24,31 @@ const KelolaKepengurusan = ({ onBack }) => {
 
     const ICON_OPTIONS = ['user', 'users', 'books', 'megaphone', 'chart-bar', 'heart', 'shield-check'];
 
-    const loadPengurus = () => {
+    const loadPengurus = async () => {
         // Load all users to find management
-        const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const mngUsers = allUsers.filter(u => u.role === 'management' && u.verified !== false);
-        setManagementUsers(mngUsers);
+        const { data: usersData } = await supabase.from('profiles').select('*').eq('role', 'management').eq('verified', true);
+        if (usersData) {
+            setManagementUsers(usersData);
+        }
 
-        const saved = localStorage.getItem('rqs_kepengurusan');
-        if (saved) {
-            setPengurusList(JSON.parse(saved));
-        } else {
-            // Default mock data if empty
-            const initialData = [
-                { id: '1', type: 'pimpinan', namaLengkap: 'Ust. H. Sobari, S.Pd.I', peran: 'Pembina / Pendiri', icon: 'user-circle' },
-                { id: '2', type: 'pimpinan', namaLengkap: 'Ust. Ahmad Fulan', peran: 'Ketua Yayasan RQS', icon: 'user' },
-                { id: '3', type: 'divisi', namaLengkap: 'Ust. Zaid', peran: 'Bidang Pendidikan', deskripsi: 'Membawahi Kurikulum Tahsin & Tahfidz', icon: 'books' },
-                { id: '4', type: 'divisi', namaLengkap: 'Ust. Umar', peran: 'Bidang Dakwah & Sosial', deskripsi: 'Program Kajian Umum & Donasi', icon: 'megaphone' },
-                { id: '5', type: 'divisi', namaLengkap: 'Ust. Ali', peran: 'Bidang Humas & Media', deskripsi: 'Informasi, Desain & Publikasi', icon: 'users' },
-            ];
-            localStorage.setItem('rqs_kepengurusan', JSON.stringify(initialData));
-            setPengurusList(initialData);
+        const { data: pengurusData, error } = await supabase.from('rqs_kepengurusan').select('*').order('created_at', { ascending: true });
+        
+        if (!error && pengurusData) {
+            if (pengurusData.length === 0) {
+                const initialData = [
+                    { type: 'pimpinan', nama_lengkap: 'Ust. H. Sobari, S.Pd.I', peran: 'Pembina / Pendiri', icon: 'user-circle' },
+                    { type: 'pimpinan', nama_lengkap: 'Ust. Ahmad Fulan', peran: 'Ketua Yayasan RQS', icon: 'user' },
+                    { type: 'divisi', nama_lengkap: 'Ust. Zaid', peran: 'Bidang Pendidikan', deskripsi: 'Membawahi Kurikulum Tahsin & Tahfidz', icon: 'books' },
+                    { type: 'divisi', nama_lengkap: 'Ust. Umar', peran: 'Bidang Dakwah & Sosial', deskripsi: 'Program Kajian Umum & Donasi', icon: 'megaphone' },
+                    { type: 'divisi', nama_lengkap: 'Ust. Ali', peran: 'Bidang Humas & Media', deskripsi: 'Informasi, Desain & Publikasi', icon: 'users' },
+                ];
+                const { data: inserted } = await supabase.from('rqs_kepengurusan').insert(initialData).select();
+                if (inserted) {
+                    setPengurusList(inserted.map(p => ({...p, namaLengkap: p.nama_lengkap, userId: p.user_id})));
+                }
+            } else {
+                setPengurusList(pengurusData.map(p => ({...p, namaLengkap: p.nama_lengkap, userId: p.user_id})));
+            }
         }
     };
 
@@ -57,7 +62,7 @@ const KelolaKepengurusan = ({ onBack }) => {
         };
     }, []);
 
-    const fetchManagementStats = (user) => {
+    const fetchManagementStats = async (user) => {
         const absensiList = [];
         const setoranList = [];
 
@@ -83,9 +88,10 @@ const KelolaKepengurusan = ({ onBack }) => {
         absensiList.sort((a,b) => new Date(b.date) - new Date(a.date));
 
         try {
-            const allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-            const mySetoran = allSetoran.filter(s => s.tholibahId === user.id || s.userId === user.id);
-            setoranList.push(...mySetoran);
+            const { data: setoranData } = await supabase.from('rqs_setoran_hafalan').select('*').or(`tholibah_id.eq.${user.id},user_id.eq.${user.id}`);
+            if (setoranData) {
+                setoranList.push(...setoranData);
+            }
         } catch(e) {}
         setoranList.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
 
@@ -99,73 +105,50 @@ const KelolaKepengurusan = ({ onBack }) => {
         return Math.abs(age_dt.getUTCFullYear() - 1970) + " Tahun";
     };
 
-    const handleMakeTholibah = () => {
+    const removeManagementAccess = async () => {
         if (!selectedManagement) return;
-        if (!window.confirm(`Apakah Anda yakin ingin menjadikan ${selectedManagement.nama} sebagai Tholibah? Hak akses Management akan dicabut.`)) return;
+        if (!window.confirm(`Yakin ingin mencabut akses management untuk ${selectedManagement.nama}? Akun akan dikembalikan menjadi tholibah biasa.`)) return;
 
-        // Update rqs_users
-        let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const userIndex = allUsers.findIndex(u => u.id === selectedManagement.id);
-        if (userIndex !== -1) {
-            allUsers[userIndex].role = 'tholibah';
-            allUsers[userIndex].verified = false;
-            localStorage.setItem('rqs_users', JSON.stringify(allUsers));
-        }
+        // Update profiles
+        await supabase.from('profiles').update({ role: 'tholibah', verified: false }).eq('id', selectedManagement.id);
 
         // Add to rqs_tholibah
-        const currentTholibah = JSON.parse(localStorage.getItem('rqs_tholibah') || '[]');
-        if (!currentTholibah.find(t => t.id === selectedManagement.id)) {
-            currentTholibah.push({
+        const { data: currentTholibah } = await supabase.from('rqs_tholibah').select('*').eq('id', selectedManagement.id);
+        if (!currentTholibah || currentTholibah.length === 0) {
+            await supabase.from('rqs_tholibah').insert([{
                 id: selectedManagement.id,
                 name: selectedManagement.nama,
                 phone: selectedManagement.phone || '',
-                classId: null,
-                joined: new Date().toISOString().split('T')[0]
-            });
-            localStorage.setItem('rqs_tholibah', JSON.stringify(currentTholibah));
+                classes: [],
+                joined: new Date().toISOString().split('T')[0],
+                role: 'tholibah'
+            }]);
         }
 
         // Remove from rqs_kepengurusan
-        const currentKepengurusan = JSON.parse(localStorage.getItem('rqs_kepengurusan') || '[]');
-        const updatedKepengurusan = currentKepengurusan.map(k => k.userId === selectedManagement.id ? { ...k, userId: '' } : k);
-        localStorage.setItem('rqs_kepengurusan', JSON.stringify(updatedKepengurusan));
+        await supabase.from('rqs_kepengurusan').update({ user_id: null }).eq('user_id', selectedManagement.id);
 
-        window.dispatchEvent(new Event('rqs-kepengurusan-updated'));
+        loadPengurus();
         setViewMode('main');
         setSelectedManagement(null);
         alert(`${selectedManagement.nama} berhasil diubah menjadi Tholibah.`);
     };
 
-    const handlePermanentDelete = async () => {
+    const handleDeleteAkun = async () => {
         if (!selectedManagement) return;
-        if (!window.confirm(`PERINGATAN 1: Apakah Anda yakin ingin MENGHAPUS PERMANEN akun ${selectedManagement.nama}?`)) return;
-        if (!window.confirm(`PERINGATAN 2: Tindakan ini tidak bisa dibatalkan! Semua data absen, setoran, progress, dan penempatan posisi akun ini akan musnah. Lanjutkan?`)) return;
+        if (!window.confirm(`PERINGATAN HARD DELETE!\n\nYakin ingin MENGHAPUS PERMANEN akun ${selectedManagement.nama}? Semua riwayat absensi, setoran, dan data terkait akan hilang.`)) return;
 
         const targetId = selectedManagement.id;
 
-        // Delete from Supabase profiles
-        const { error: profileError } = await supabase.from('profiles').delete().eq('id', targetId);
-        if (profileError) {
-            console.error("Gagal hapus profile:", profileError);
-        }
+        // Delete from profiles
+        await supabase.from('profiles').delete().eq('id', targetId);
 
-        // Call RPC to delete auth user
-        const { error: rpcError } = await supabase.rpc('delete_user_admin', { user_id_to_delete: targetId });
-        if (rpcError) {
-            console.warn("RPC delete_user_admin gagal:", rpcError.message);
-        }
-
-        let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        allUsers = allUsers.filter(u => u.id !== targetId);
-        localStorage.setItem('rqs_users', JSON.stringify(allUsers));
-
-        let currentKepengurusan = JSON.parse(localStorage.getItem('rqs_kepengurusan') || '[]');
-        currentKepengurusan = currentKepengurusan.map(k => k.userId === targetId ? { ...k, userId: '' } : k);
-        localStorage.setItem('rqs_kepengurusan', JSON.stringify(currentKepengurusan));
+        // Remove from rqs_kepengurusan
+        await supabase.from('rqs_kepengurusan').update({ user_id: null }).eq('user_id', targetId);
 
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (!key) continue;
+            
             if (key.startsWith('rqs_absen_')) {
                 try {
                     const data = JSON.parse(localStorage.getItem(key));
@@ -177,11 +160,9 @@ const KelolaKepengurusan = ({ onBack }) => {
             }
         }
 
-        let allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        allSetoran = allSetoran.filter(s => s.userId !== targetId && s.tholibahId !== targetId);
-        localStorage.setItem('rqs_setoran_hafalan', JSON.stringify(allSetoran));
+        await supabase.from('rqs_setoran_hafalan').delete().or(`user_id.eq.${targetId},tholibah_id.eq.${targetId}`);
 
-        window.dispatchEvent(new Event('rqs-kepengurusan-updated'));
+        loadPengurus();
         setViewMode('main');
         setSelectedManagement(null);
         alert(`Akun ${selectedManagement.nama} telah dibersihkan.`);
@@ -194,40 +175,34 @@ const KelolaKepengurusan = ({ onBack }) => {
         setViewMode('detail');
     };
 
-    const handleSave = () => {
+    const handleSave = async (e) => {
+        e.preventDefault();
         if (!namaLengkap.trim() || !peran.trim()) return alert("Nama dan Peran/Jabatan wajib diisi.");
 
-        const saved = JSON.parse(localStorage.getItem('rqs_kepengurusan') || '[]');
-        let updated;
+        const newPengurus = {
+            type,
+            nama_lengkap: namaLengkap,
+            user_id: userId || null,
+            peran,
+            deskripsi,
+            icon
+        };
 
         if (editingId) {
-            updated = saved.map(p => p.id === editingId ? { ...p, type, namaLengkap, userId, peran, deskripsi, icon } : p);
+            await supabase.from('rqs_kepengurusan').update(newPengurus).eq('id', editingId);
         } else {
-            const newPengurus = {
-                id: Date.now().toString(),
-                type,
-                namaLengkap,
-                userId,
-                peran,
-                deskripsi: type === 'divisi' ? deskripsi : '',
-                icon: type === 'divisi' ? icon : (type === 'pimpinan' ? 'user' : 'user')
-            };
-            updated = [...saved, newPengurus];
+            await supabase.from('rqs_kepengurusan').insert([newPengurus]);
         }
 
-        localStorage.setItem('rqs_kepengurusan', JSON.stringify(updated));
-        window.dispatchEvent(new Event('rqs-kepengurusan-updated'));
-        
+        loadPengurus();
         setIsModalOpen(false);
         resetForm();
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm("Yakin ingin menghapus pengurus ini?")) {
-            const saved = JSON.parse(localStorage.getItem('rqs_kepengurusan') || '[]');
-            const updated = saved.filter(p => p.id !== id);
-            localStorage.setItem('rqs_kepengurusan', JSON.stringify(updated));
-            window.dispatchEvent(new Event('rqs-kepengurusan-updated'));
+            await supabase.from('rqs_kepengurusan').delete().eq('id', id);
+            loadPengurus();
         }
     };
 
@@ -611,7 +586,7 @@ const KelolaKepengurusan = ({ onBack }) => {
                     </button>
 
                     <button 
-                        onClick={handlePermanentDelete}
+                        onClick={handleDeleteAkun}
                         className="w-full bg-white p-4 rounded-2xl shadow-sm border border-red-200 flex items-center justify-between hover:bg-red-50 transition-colors"
                     >
                         <div className="flex items-center gap-3">

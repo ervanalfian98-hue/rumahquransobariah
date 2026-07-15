@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
+import { supabase } from '../lib/supabaseClient';
 
 const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
     const [setoranList, setSetoranList] = useState([]);
     const [activeActionId, setActiveActionId] = useState(null);
     const [catatan, setCatatan] = useState('');
 
-    const loadSetoran = () => {
-        const saved = localStorage.getItem('rqs_setoran_hafalan');
-        if (saved) {
-            setSetoranList(JSON.parse(saved).sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)));
+    const loadSetoran = async () => {
+        const { data } = await supabase.from('rqs_setoran_hafalan').select('*').order('tanggal', { ascending: false });
+        if (data) {
+            setSetoranList(data);
         }
     };
 
@@ -24,18 +25,16 @@ const SetorHafalanMaster = ({ onBack, ustadzName = 'Ustadz Hanan' }) => {
         };
     }, []);
 
-    const updateStatus = (id, newStatus, catatanTeks = '') => {
-        const saved = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        const idx = saved.findIndex(s => s.id === id);
-        if (idx !== -1) {
-            saved[idx].status = newStatus;
-            saved[idx].ustadz_name = ustadzName;
-            if (catatanTeks) saved[idx].catatan = catatanTeks;
-            
-            localStorage.setItem('rqs_setoran_hafalan', JSON.stringify(saved));
-            window.dispatchEvent(new Event('rqs-setoran-updated'));
-            loadSetoran();
-        }
+    const updateStatus = async (id, newStatus, catatanTeks = '') => {
+        const updateData = {
+            status: newStatus,
+            ustadz_name: ustadzName
+        };
+        if (catatanTeks) updateData.catatan = catatanTeks;
+
+        await supabase.from('rqs_setoran_hafalan').update(updateData).eq('id', id);
+        
+        loadSetoran();
     };
 
     const handleSimak = (id) => {

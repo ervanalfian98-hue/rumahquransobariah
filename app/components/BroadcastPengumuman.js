@@ -19,7 +19,7 @@ const BroadcastPengumuman = ({ onBack }) => {
     const fetchData = async () => {
         if (isSupabaseConfigured) {
             try {
-                const { data, error } = await supabase.from('pengumuman').select('*').order('tanggal', { ascending: false }).order('created_at', { ascending: false });
+                const { data, error } = await supabase.from('rqs_pengumuman').select('*').order('tanggal', { ascending: false }).order('created_at', { ascending: false });
                 if (error) throw error;
                 setPengumuman(data || []);
             } catch (error) {
@@ -39,10 +39,10 @@ const BroadcastPengumuman = ({ onBack }) => {
         try {
             if (isSupabaseConfigured) {
                 if (isEditing) {
-                    const { error } = await supabase.from('pengumuman').update({ judul, tanggal, isi }).eq('id', isEditing);
+                    const { error } = await supabase.from('rqs_pengumuman').update({ judul, tanggal, isi }).eq('id', isEditing);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('pengumuman').insert([{ judul, tanggal, isi }]);
+                    const { error } = await supabase.from('rqs_pengumuman').insert([{ judul, tanggal, isi }]);
                     if (error) throw error;
                 }
             } else {
@@ -81,7 +81,7 @@ const BroadcastPengumuman = ({ onBack }) => {
 
         try {
             if (isSupabaseConfigured) {
-                await supabase.from('pengumuman').delete().eq('id', id);
+                await supabase.from('rqs_pengumuman').delete().eq('id', id);
                 fetchData();
             } else {
                 const newData = pengumuman.filter(p => p.id !== id);

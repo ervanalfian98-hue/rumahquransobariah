@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES as INITIAL_CLASSES } from './MockData';
+import { supabase } from '../lib/supabaseClient';
 
 const ClassItem = ({ cls, handleEdit, handleDelete }) => {
     const controls = useDragControls();
@@ -73,53 +74,74 @@ const KelolaKelas = ({ onBack }) => {
     const TINGKATAN_OPTIONS = ['Dasar', 'Menengah', 'Lanjutan', 'Khusus'];
 
     useEffect(() => {
-        const loadClasses = () => {
-            const saved = localStorage.getItem('rqs_classes');
-            if (saved) {
-                setClasses(JSON.parse(saved));
+        const loadClasses = async () => {
+            const { data, error } = await supabase.from('rqs_classes').select('*').order('created_at', { ascending: true });
+            if (!error && data) {
+                if (data.length === 0) {
+                    // Seed initials
+                    const mapped = INITIAL_CLASSES.map(c => ({
+                        id: c.id,
+                        name: c.name,
+                        description: c.desc,
+                        color: c.color
+                    }));
+                    const { data: inserted } = await supabase.from('rqs_classes').insert(mapped).select();
+                    if (inserted) {
+                        setClasses(inserted.map(c => ({...c, desc: c.description})));
+                    }
+                } else {
+                    setClasses(data.map(c => ({...c, desc: c.description})));
+                }
             } else {
-                setClasses(INITIAL_CLASSES);
-                localStorage.setItem('rqs_classes', JSON.stringify(INITIAL_CLASSES));
+                // Fallback local if error
+                const saved = localStorage.getItem('rqs_classes');
+                if (saved) setClasses(JSON.parse(saved));
+                setClasses(data.map(c => ({...c, desc: c.description})));
             }
         };
         loadClasses();
-        window.addEventListener('storage', loadClasses);
-        return () => window.removeEventListener('storage', loadClasses);
     }, []);
 
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
         
         const id = editingId || name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
-        const newClass = { id, name, desc, tingkatan, color };
+        const newClass = { id, name, description: desc, tingkatan, color };
 
         let updated;
         if (editingId) {
-            updated = classes.map(c => c.id === editingId ? newClass : c);
+            const { error } = await supabase.from('rqs_classes').update(newClass).eq('id', editingId);
+            if (!error) updated = classes.map(c => c.id === editingId ? { ...c, ...newClass, desc: newClass.description } : c);
         } else {
-            updated = [...classes, newClass];
+            const { error } = await supabase.from('rqs_classes').insert([newClass]);
+            if (!error) updated = [...classes, { ...newClass, desc: newClass.description }];
         }
 
-        setClasses(updated);
-        localStorage.setItem('rqs_classes', JSON.stringify(updated));
-        window.dispatchEvent(new Event('rqs-classes-updated'));
-
-        setIsModalOpen(false);
-        resetForm();
+        if (updated) {
+            setClasses(updated);
+            window.dispatchEvent(new Event('rqs-classes-updated'));
+            setIsModalOpen(false);
+            resetForm();
+        } else {
+            alert('Gagal menyimpan kelas ke database');
+        }
     };
 
-    const handleDelete = (id) => {
-        if (!window.confirm('Yakin ingin menghapus kelas ini? Tholibah atau Pengajar yang terkait dengan kelas ini mungkin perlu diatur ulang.')) return;
-
-        const updated = classes.filter(c => c.id !== id);
-        setClasses(updated);
-        localStorage.setItem('rqs_classes', JSON.stringify(updated));
-        window.dispatchEvent(new Event('rqs-classes-updated'));
+    const handleDelete = async (id) => {
+        if(window.confirm('Yakin ingin menghapus kelas ini?')) {
+            const { error } = await supabase.from('rqs_classes').delete().eq('id', id);
+            if (!error) {
+                const updated = classes.filter(c => c.id !== id);
+                setClasses(updated);
+                window.dispatchEvent(new Event('rqs-classes-updated'));
+            } else {
+                alert('Gagal menghapus kelas');
+            }
+        }
     };
 
-    const handleReorder = (newOrder) => {
+    const handleReorder = async (newOrder) => {
         setClasses(newOrder);
-        localStorage.setItem('rqs_classes', JSON.stringify(newOrder));
         window.dispatchEvent(new Event('rqs-classes-updated'));
     };
 

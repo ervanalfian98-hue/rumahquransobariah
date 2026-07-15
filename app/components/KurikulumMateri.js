@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES as INITIAL_CLASSES } from './MockData';
+import { supabase } from '../lib/supabaseClient';
 
 const KurikulumMateri = ({ onBack }) => {
     const [pengajarList, setPengajarList] = useState([]);
@@ -20,17 +21,29 @@ const KurikulumMateri = ({ onBack }) => {
     const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
-        const loadData = () => {
-            const savedPengajar = localStorage.getItem('rqs_pengajar');
-            if (savedPengajar) setPengajarList(JSON.parse(savedPengajar));
+        const loadData = async () => {
+            const { data: pengajar } = await supabase.from('rqs_pengajar').select('*');
+            if (pengajar) setPengajarList(pengajar);
 
-            const savedSchedules = localStorage.getItem('rqs_jadwal_kelas');
-            if (savedSchedules) setSchedules(JSON.parse(savedSchedules));
+            const { data: schedules } = await supabase.from('rqs_jadwal_kelas').select('*');
+            if (schedules) {
+                const formattedSchedules = schedules.map(s => ({
+                    id: s.id,
+                    classId: s.class_id,
+                    className: s.class_name,
+                    date: s.date,
+                    startTime: s.start_time,
+                    endTime: s.end_time,
+                    materi: s.materi,
+                    pengajar: s.pengajar
+                }));
+                setSchedules(formattedSchedules);
+            }
 
+            const { data: dbClasses } = await supabase.from('rqs_classes').select('*');
             let currentClasses = INITIAL_CLASSES;
-            const savedClasses = localStorage.getItem('rqs_classes');
-            if (savedClasses) {
-                currentClasses = JSON.parse(savedClasses);
+            if (dbClasses && dbClasses.length > 0) {
+                currentClasses = dbClasses;
             }
             setClassesList(currentClasses);
             
@@ -48,7 +61,7 @@ const KurikulumMateri = ({ onBack }) => {
         return teachers.map(p => (p.gender === 'ustadz' ? 'Ust. ' : 'Ustzh. ') + p.name).join(', ');
     };
 
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
         
         if (startTime >= endTime) {
@@ -56,32 +69,43 @@ const KurikulumMateri = ({ onBack }) => {
             return;
         }
 
-        const newSchedule = {
-            id: Date.now().toString(),
-            classId,
-            className: classesList.find(c => c.id === classId)?.name,
+        const newDbSchedule = {
+            class_id: classId,
+            class_name: classesList.find(c => c.id === classId)?.name,
             pengajar: getClassTeachers(classId),
             date,
-            startTime,
-            endTime,
-            materi,
-            createdAt: new Date().toISOString()
+            start_time: startTime,
+            end_time: endTime,
+            materi
         };
 
-        const updatedSchedules = [...schedules, newSchedule];
-        setSchedules(updatedSchedules);
-        localStorage.setItem('rqs_jadwal_kelas', JSON.stringify(updatedSchedules));
+        const { data, error } = await supabase.from('rqs_jadwal_kelas').insert([newDbSchedule]).select();
+        
+        if (data && data.length > 0) {
+            const inserted = data[0];
+            const newSchedule = {
+                id: inserted.id,
+                classId: inserted.class_id,
+                className: inserted.class_name,
+                pengajar: inserted.pengajar,
+                date: inserted.date,
+                startTime: inserted.start_time,
+                endTime: inserted.end_time,
+                materi: inserted.materi
+            };
+            setSchedules([...schedules, newSchedule]);
+        }
 
         // Reset form
         setClassId(''); setDate(''); setStartTime(''); setEndTime(''); setMateri('');
         setShowForm(false);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if(window.confirm('Yakin ingin menghapus jadwal ini?')) {
+            await supabase.from('rqs_jadwal_kelas').delete().eq('id', id);
             const updated = schedules.filter(s => s.id !== id);
             setSchedules(updated);
-            localStorage.setItem('rqs_jadwal_kelas', JSON.stringify(updated));
         }
     };
 

@@ -17,70 +17,66 @@ const KelolaTholibah = ({ onBack }) => {
     const [studentStats, setStudentStats] = useState({ absensiList: [], setoranList: [] });
 
     useEffect(() => {
-        const loadTholibah = () => {
-            const savedTholibah = JSON.parse(localStorage.getItem('rqs_tholibah') || '[]');
-            const savedUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
+        const loadTholibah = async () => {
+            const { data: savedTholibah } = await supabase.from('rqs_tholibah').select('*');
+            const { data: savedUsers } = await supabase.from('profiles').select('*').in('role', ['tholibah', 'alumni']).eq('verified', true);
 
-            let updated = false;
-            const currentList = savedTholibah.map(t => {
-                if (t.classId !== undefined && !t.classes) {
-                    t.classes = t.classId ? [t.classId] : [];
-                    delete t.classId;
-                }
-                if (!t.classes) t.classes = [];
-                return t;
-            });
+            const currentList = savedTholibah ? savedTholibah.map(t => ({...t, tanggalLahir: t.tanggal_lahir, tempatLahir: t.tempat_lahir})) : [];
+            let updatedList = [...currentList];
+            let hasNew = false;
 
-            savedUsers.forEach(u => {
-                if ((u.role === 'tholibah' || u.role === 'alumni') && u.verified !== false) {
-                    const exists = currentList.find(t => t.id === u.id || t.phone === u.phone || t.name === u.nama);
-                    if (!exists) {
-                        currentList.push({
-                            id: u.id,
-                            name: u.nama,
-                            phone: u.phone,
-                            email: u.email,
-                            classes: u.role === 'alumni' ? ['alumni'] : [],
-                            joined: new Date().toISOString().split('T')[0],
-                            tanggalLahir: u.tanggalLahir,
-                            tempatLahir: u.tempatLahir,
-                            role: u.role
-                        });
-                        updated = true;
-                    } else {
-                        let changed = false;
-                        if (exists.role !== u.role) {
-                            exists.role = u.role;
-                            if (u.role === 'alumni') exists.classes = ['alumni'];
-                            changed = true;
-                        }
-                        if (!exists.email && u.email) {
-                            exists.email = u.email;
-                            changed = true;
-                        }
-                        if (!exists.tempatLahir && u.tempatLahir) {
-                            exists.tempatLahir = u.tempatLahir;
-                            changed = true;
-                        }
-                        if (!exists.tanggalLahir && u.tanggalLahir) {
-                            exists.tanggalLahir = u.tanggalLahir;
-                            changed = true;
-                        }
-                        if (changed) updated = true;
+            savedUsers?.forEach(u => {
+                const exists = updatedList.find(t => t.id === u.id);
+                let changed = false;
+                
+                if (!exists) {
+                    updatedList.push({
+                        id: u.id,
+                        name: u.nama,
+                        phone: u.phone,
+                        email: u.email,
+                        classes: u.role === 'alumni' ? ['alumni'] : [],
+                        joined: new Date().toISOString().split('T')[0],
+                        tanggalLahir: u.tanggalLahir,
+                        tempatLahir: u.tempatLahir,
+                        role: u.role
+                    });
+                    hasNew = true;
+                } else {
+                    if (exists.role !== u.role) {
+                        exists.role = u.role;
+                        if (u.role === 'alumni') exists.classes = ['alumni'];
+                        changed = true;
                     }
+                    if (!exists.email && u.email) {
+                        exists.email = u.email;
+                        changed = true;
+                    }
+                    if (!exists.tempatLahir && u.tempatLahir) {
+                        exists.tempatLahir = u.tempatLahir;
+                        changed = true;
+                    }
+                    if (!exists.tanggalLahir && u.tanggalLahir) {
+                        exists.tanggalLahir = u.tanggalLahir;
+                        changed = true;
+                    }
+                    if (changed) hasNew = true;
                 }
             });
 
-            if (updated) {
-                localStorage.setItem('rqs_tholibah', JSON.stringify(currentList));
+            if (hasNew) {
+                const toUpsert = updatedList.map(t => ({
+                    id: t.id, name: t.name, phone: t.phone, email: t.email, classes: t.classes, joined: t.joined, tanggal_lahir: t.tanggalLahir, tempat_lahir: t.tempatLahir, role: t.role
+                }));
+                await supabase.from('rqs_tholibah').upsert(toUpsert);
             }
-            setTholibahList(currentList);
+            setTholibahList(updatedList);
         };
 
-        const loadClasses = () => {
-            const savedClasses = localStorage.getItem('rqs_classes');
-            if (savedClasses) {
-                setClassesList(JSON.parse(savedClasses));
+        const loadClasses = async () => {
+            const { data } = await supabase.from('rqs_classes').select('*');
+            if (data) {
+                setClassesList(data.length > 0 ? data : INITIAL_CLASSES);
             } else {
                 setClassesList(INITIAL_CLASSES);
             }
@@ -113,7 +109,7 @@ const KelolaTholibah = ({ onBack }) => {
         return age + ' Tahun';
     };
 
-    const fetchStudentStats = (student) => {
+    const fetchStudentStats = async (student) => {
         const absensiList = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -138,29 +134,32 @@ const KelolaTholibah = ({ onBack }) => {
         }
         absensiList.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-        const allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        const setoranList = allSetoran.filter(s => s.tholibah_name === student.name || s.userId === student.id).sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+        try {
+            const { data: allSetoran } = await supabase.from('rqs_setoran_hafalan').select('*').or(`tholibah_id.eq.${student.id},user_id.eq.${student.id}`);
+            if (allSetoran) {
+                setoranList.push(...allSetoran);
+            }
+        } catch(e) {}
+        setoranList.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
 
         setStudentStats({ absensiList, setoranList });
     };
 
-    const saveTholibah = (newList) => {
+    const saveTholibah = async (newList) => {
         setTholibahList(newList);
-        localStorage.setItem('rqs_tholibah', JSON.stringify(newList));
+        const toUpsert = newList.map(t => ({
+            id: t.id, name: t.name, phone: t.phone, email: t.email, classes: t.classes, joined: t.joined, tanggal_lahir: t.tanggalLahir, tempat_lahir: t.tempatLahir, role: t.role
+        }));
+        await supabase.from('rqs_tholibah').upsert(toUpsert);
     };
 
-    const handleSaveAssignClasses = () => {
+    const handleSaveAssignClasses = async () => {
         if (!studentToAssign) return;
 
         let shouldUpdateUserRole = studentToAssign.role === 'alumni';
         
         if (shouldUpdateUserRole) {
-            const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-            const userIndex = allUsers.findIndex(u => u.id === studentToAssign.id);
-            if (userIndex !== -1) {
-                allUsers[userIndex].role = 'tholibah';
-                localStorage.setItem('rqs_users', JSON.stringify(allUsers));
-            }
+            await supabase.from('profiles').update({ role: 'tholibah' }).eq('id', studentToAssign.id);
         }
 
         const newList = tholibahList.map(t => 
@@ -192,16 +191,11 @@ const KelolaTholibah = ({ onBack }) => {
         return tholibahList.filter(t => t.classes && t.classes.includes(classId));
     };
 
-    const handleMakeAlumni = () => {
+    const handleMakeAlumni = async () => {
         if (!selectedStudent) return;
         if (!window.confirm(`Apakah Anda yakin ingin menjadikan ${selectedStudent.name} sebagai Alumni? Mereka akan dikeluarkan dari kelas saat ini.`)) return;
 
-        const allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const userIndex = allUsers.findIndex(u => u.id === selectedStudent.id);
-        if (userIndex !== -1) {
-            allUsers[userIndex].role = 'alumni';
-            localStorage.setItem('rqs_users', JSON.stringify(allUsers));
-        }
+        await supabase.from('profiles').update({ role: 'alumni' }).eq('id', selectedStudent.id);
 
         const newList = tholibahList.map(t => 
             t.id === selectedStudent.id ? { ...t, role: 'alumni', classes: ['alumni'] } : t
@@ -218,24 +212,14 @@ const KelolaTholibah = ({ onBack }) => {
         if (!window.confirm(`PERINGATAN 1: Apakah Anda yakin ingin MENGHAPUS PERMANEN akun ${selectedStudent.name}?`)) return;
         if (!window.confirm(`PERINGATAN 2: Tindakan ini tidak bisa dibatalkan! Semua data absen, setoran, dan progress akun ${selectedStudent.name} akan musnah sampai ke akarnya. Lanjutkan?`)) return;
 
-        let allUsers = JSON.parse(localStorage.getItem('rqs_users') || '[]');
-        const actualUser = allUsers.find(u => u.id === selectedStudent.id || u.nama === selectedStudent.name || u.phone === selectedStudent.phone);
-        const finalDeleteId = actualUser ? actualUser.id : selectedStudent.id;
+        const finalDeleteId = selectedStudent.id;
         const targetName = selectedStudent.name;
 
-        const { error: profileError } = await supabase.from('profiles').delete().eq('id', finalDeleteId);
-        if (profileError) console.error("Gagal hapus profile:", profileError);
-
-        const { error: rpcError } = await supabase.rpc('delete_user_admin', { user_id_to_delete: finalDeleteId });
-        if (rpcError) console.warn("RPC delete_user_admin gagal:", rpcError.message);
-
-        allUsers = allUsers.filter(u => u.id !== finalDeleteId);
-        localStorage.setItem('rqs_users', JSON.stringify(allUsers));
-
-        let currentTholibah = JSON.parse(localStorage.getItem('rqs_tholibah') || '[]');
-        currentTholibah = currentTholibah.filter(t => t.id !== finalDeleteId);
-        setTholibahList(currentTholibah);
-        localStorage.setItem('rqs_tholibah', JSON.stringify(currentTholibah));
+        await supabase.from('profiles').delete().eq('id', finalDeleteId);
+        
+        const newList = tholibahList.filter(t => t.id !== finalDeleteId);
+        setTholibahList(newList);
+        await supabase.from('rqs_tholibah').delete().eq('id', finalDeleteId);
 
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -254,9 +238,7 @@ const KelolaTholibah = ({ onBack }) => {
             }
         }
 
-        let allSetoran = JSON.parse(localStorage.getItem('rqs_setoran_hafalan') || '[]');
-        allSetoran = allSetoran.filter(s => s.tholibah_name !== targetName && s.userId !== finalDeleteId);
-        localStorage.setItem('rqs_setoran_hafalan', JSON.stringify(allSetoran));
+        await supabase.from('rqs_setoran_hafalan').delete().or(`user_id.eq.${finalDeleteId},tholibah_id.eq.${finalDeleteId}`);
 
         setViewMode('main');
         setSelectedStudent(null);
