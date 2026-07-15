@@ -26,7 +26,7 @@ const PendidikanScreen = ({ currentUser }) => {
     useEffect(() => {
         const loadData = async () => {
             let currentClasses = INITIAL_CLASSES;
-            const { data: dbClasses } = await supabase.from('rqs_classes').select('*');
+            const { data: dbClasses } = await supabase.from('rqs_classes').select('*').order('order_index', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
             if (dbClasses && dbClasses.length > 0) {
                 currentClasses = dbClasses.map(c => ({...c, desc: c.description}));
             }
@@ -379,8 +379,12 @@ const PendidikanScreen = ({ currentUser }) => {
                                 return (
                                     <div key={student.id} className="bg-white p-3.5 rounded-2xl shadow-sm border border-[#E8D2A6]/50 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-[#FCF7E8] text-[#B88A44] rounded-full flex items-center justify-center font-bold">
-                                                {student.name.charAt(0)}
+                                            <div className="w-10 h-10 bg-[#FCF7E8] text-[#B88A44] rounded-full flex items-center justify-center font-bold overflow-hidden">
+                                                {student.avatarData || student.avatar_url ? (
+                                                    <img src={student.avatarData || student.avatar_url} alt={student.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    student.name.charAt(0)
+                                                )}
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-[#4A1C14] text-[13px] leading-tight flex items-center flex-wrap gap-1">
@@ -469,7 +473,7 @@ const PendidikanScreen = ({ currentUser }) => {
 
                         <div className="mt-14 w-full">
                             <h3 className="text-xl font-bold text-[#4A1C14] leading-tight">{selectedClass.name}</h3>
-                            <p className="text-[10px] text-[#B88A44] mt-1 uppercase tracking-widest font-semibold">Tingkat Dasar</p>
+                            <p className="text-[10px] text-[#B88A44] mt-1 uppercase tracking-widest font-semibold">Tingkat {selectedClass.tingkatan || 'Dasar'}</p>
 
                             <div className="w-full bg-[#FCF7E8] rounded-2xl p-3 mt-5 border border-[#E8D2A6]/50 text-left">
                                 <div className="flex justify-between items-center mb-2">

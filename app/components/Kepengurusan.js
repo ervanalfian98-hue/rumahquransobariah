@@ -221,8 +221,12 @@ const Kepengurusan = ({ setActiveTab }) => {
                                 {pimpinanList.map((p, idx) => (
                                     <div key={p.id} className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm flex flex-col items-center w-full max-w-[250px] relative overflow-hidden group">
                                         <div className={`absolute top-0 w-full h-12 left-0 right-0 ${idx === 0 ? 'bg-indigo-50' : 'bg-gray-50'}`}></div>
-                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 z-10 border-4 border-white shadow-sm mb-2 ${idx === 0 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
-                                            <PhosphorIcon icon={p.icon || 'user-circle'} size={32} weight="fill" />
+                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 z-10 border-4 border-white shadow-sm mb-2 overflow-hidden ${idx === 0 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
+                                            {p.userId && managementUsers.find(u => u.id === p.userId)?.avatar_url ? (
+                                                <img src={managementUsers.find(u => u.id === p.userId).avatar_url} alt={p.namaLengkap} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <PhosphorIcon icon={p.icon || 'user-circle'} size={32} weight="fill" />
+                                            )}
                                         </div>
                                         <h4 className="font-bold text-gray-800 text-sm text-center px-2">{p.namaLengkap}</h4>
                                         <p className={`text-[10px] font-bold px-3 py-1 rounded-full mt-1 ${idx === 0 ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 bg-gray-100'}`}>
@@ -256,8 +260,12 @@ const Kepengurusan = ({ setActiveTab }) => {
                                     
                                     return (
                                         <div key={d.id} className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 relative group">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${theme.bg} ${theme.text}`}>
-                                                <PhosphorIcon icon={d.icon || 'users'} weight="fill" size={24} />
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${theme.bg} ${theme.text}`}>
+                                                {d.userId && managementUsers.find(u => u.id === d.userId)?.avatar_url ? (
+                                                    <img src={managementUsers.find(u => u.id === d.userId).avatar_url} alt={d.namaLengkap} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <PhosphorIcon icon={d.icon || 'users'} weight="fill" size={24} />
+                                                )}
                                             </div>
                                             <div className="flex-1 pr-2 overflow-hidden">
                                                 <h4 className="font-bold text-gray-800 text-sm truncate">{d.peran}</h4>

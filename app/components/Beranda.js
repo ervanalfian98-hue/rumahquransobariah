@@ -87,17 +87,25 @@ const BerandaScreen = ({ setActiveTab, currentUser }) => {
     // Helper untuk Kalender Widget
     const getHijriDate = (date) => {
         try {
-            const formatter = new Intl.DateTimeFormat('id-ID-u-ca-islamic-umalqura', {
+            const formatter = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {
                 day: 'numeric',
-                month: 'long',
+                month: 'numeric',
                 year: 'numeric'
             });
             const parts = formatter.formatToParts(date);
+            
             const dayStr = parts.find(p => p.type === 'day')?.value || '1';
+            const monthStr = parts.find(p => p.type === 'month')?.value || '1';
+            const yearStr = parts.find(p => p.type === 'year')?.value || '1446';
+            
             const day = parseInt(dayStr.replace(/[^0-9]/g, '')) || 1;
-            const month = parts.find(p => p.type === 'month')?.value || '';
-            const year = parts.find(p => p.type === 'year')?.value || '';
-            return { day, month, year: year.replace(/[^0-9]/g, '') };
+            const monthNum = parseInt(monthStr.replace(/[^0-9]/g, '')) || 1;
+            const yearNum = parseInt(yearStr.replace(/[^0-9]/g, '')) || 1446;
+            
+            if (yearNum > 2000) return { day: 1, month: 'Muharram', year: '1446' };
+            
+            const hijriMonths = ['Muharram', 'Safar', 'Rabiul Awal', 'Rabiul Akhir', 'Jumadil Awal', 'Jumadil Akhir', 'Rajab', 'Syaban', 'Ramadhan', 'Syawal', 'Dzulqaidah', 'Dzulhijjah'];
+            return { day, month: hijriMonths[monthNum - 1] || 'Muharram', year: yearNum.toString() };
         } catch (e) {
             return { day: 1, month: 'Muharram', year: '1446' };
         }

@@ -29,7 +29,7 @@ const MasterScreen = () => {
     const [stats, setStats] = useState({
         totalTholibah: 0,
         totalManagement: 0,
-        attendancePercentage: 0
+        antreanSetoran: 0
     });
 
     useEffect(() => {
@@ -53,28 +53,17 @@ const MasterScreen = () => {
             totalManagement = allUsers.filter(u => u.role === 'management' && u.verified !== false).length;
         }
 
-        // Load Attendance (checking rqs_jadwal if any)
-        const jadwalData = JSON.parse(localStorage.getItem('rqs_jadwal') || '[]');
-        let totalHadir = 0;
-        let totalExpected = 0;
-        
-        jadwalData.forEach(j => {
-            if (j.absensi && j.absensi.length > 0) {
-                totalHadir += j.absensi.length;
-                totalExpected += (totalTholibah > 0 ? totalTholibah : 10); 
-            }
-        });
-        
-        let attendancePercentage = 0;
-        if (totalExpected > 0) {
-            attendancePercentage = Math.round((totalHadir / totalExpected) * 100);
-            if (attendancePercentage > 100) attendancePercentage = 100;
+        // Load Antrean Setoran from Supabase
+        let antreanSetoran = 0;
+        const { data: setoran, error: errSetoran } = await supabase.from('rqs_setoran_hafalan').select('id').eq('status', 'menunggu');
+        if (!errSetoran && setoran) {
+            antreanSetoran = setoran.length;
         }
 
         setStats({
             totalTholibah,
             totalManagement,
-            attendancePercentage: attendancePercentage > 0 ? attendancePercentage : 0 // 0 means no data yet
+            antreanSetoran
         });
     }, []);
 
@@ -152,9 +141,9 @@ const MasterScreen = () => {
                     </div>
                     {/* Stat 3 */}
                     <div className="bg-white border border-[#E8D2A6] rounded-[1.25rem] p-3 flex flex-col items-center justify-center text-center shadow-sm">
-                        <span className="text-[10px] font-semibold text-[#4A1C14]/70 mb-1 leading-tight">Monthly<br />Attendance</span>
-                        <span className="text-xl font-bold text-[#B88A44]">{stats.attendancePercentage}%</span>
-                        <span className="text-[10px] text-[#4A1C14]/60 mt-0.5">Kehadiran</span>
+                        <span className="text-[10px] font-semibold text-[#4A1C14]/70 mb-1 leading-tight">Antrean<br />Setoran</span>
+                        <span className="text-xl font-bold text-[#B88A44]">{stats.antreanSetoran}</span>
+                        <span className="text-[10px] text-[#4A1C14]/60 mt-0.5">Orang</span>
                     </div>
                 </div>
             </div>

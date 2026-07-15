@@ -75,7 +75,7 @@ const KelolaKelas = ({ onBack }) => {
 
     useEffect(() => {
         const loadClasses = async () => {
-            const { data, error } = await supabase.from('rqs_classes').select('*').order('created_at', { ascending: true });
+            const { data, error } = await supabase.from('rqs_classes').select('*').order('order_index', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
             if (!error && data) {
                 if (data.length === 0) {
                     // Seed initials
@@ -141,6 +141,11 @@ const KelolaKelas = ({ onBack }) => {
 
     const handleReorder = async (newOrder) => {
         setClasses(newOrder);
+        // Save new order to Supabase
+        const updates = newOrder.map((cls, index) => {
+            return supabase.from('rqs_classes').update({ order_index: index }).eq('id', cls.id);
+        });
+        await Promise.all(updates);
         window.dispatchEvent(new Event('rqs-classes-updated'));
     };
 

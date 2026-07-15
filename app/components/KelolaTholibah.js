@@ -391,8 +391,12 @@ const KelolaTholibah = ({ onBack }) => {
                         {students.map(student => (
                             <div key={student.id} className="bg-white p-3.5 rounded-2xl shadow-sm border border-[#E8D2A6]/50 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-[#FCF7E8] text-[#B88A44] rounded-full flex items-center justify-center font-bold">
-                                        {student.name.charAt(0)}
+                                    <div className="w-10 h-10 bg-[#FCF7E8] text-[#B88A44] rounded-full flex items-center justify-center font-bold overflow-hidden">
+                                        {student.avatar_url ? (
+                                            <img src={student.avatar_url} alt={student.name || student.nama} className="w-full h-full object-cover" />
+                                        ) : (
+                                            (student.name || student.nama || '?').charAt(0)
+                                        )}
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-[#4A1C14] text-[13px]">{student.name}</h4>
@@ -431,8 +435,12 @@ const KelolaTholibah = ({ onBack }) => {
                 <div className="bg-white p-5 rounded-3xl shadow-sm border border-[#E8D2A6]/50 relative overflow-hidden mb-5">
                     <div className="absolute top-0 left-0 w-full h-16 bg-[#B88A44]"></div>
                     <div className="relative z-10 flex flex-col items-center mt-4">
-                        <div className="w-20 h-20 bg-white border-4 border-white rounded-full shadow-md flex items-center justify-center text-3xl font-bold text-[#B88A44] bg-gradient-to-br from-[#FCF7E8] to-[#E8D2A6]">
-                            {selectedStudent.name.charAt(0)}
+                        <div className="w-20 h-20 bg-white border-4 border-white rounded-full shadow-md flex items-center justify-center text-3xl font-bold text-[#B88A44] bg-gradient-to-br from-[#FCF7E8] to-[#E8D2A6] overflow-hidden">
+                            {selectedStudent.avatar_url ? (
+                                <img src={selectedStudent.avatar_url} alt={selectedStudent.name || selectedStudent.nama} className="w-full h-full object-cover" />
+                            ) : (
+                                (selectedStudent.name || selectedStudent.nama || '?').charAt(0)
+                            )}
                         </div>
                         <h3 className="font-bold text-[#4A1C14] text-lg mt-3">{selectedStudent.name}</h3>
                         

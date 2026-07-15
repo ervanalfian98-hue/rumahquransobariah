@@ -88,6 +88,17 @@ const PengaturanProfil = ({ currentUser, setActiveTab }) => {
         const updatedCurrentUser = updatedUsers.find(u => u.id === currentUser.id);
         localStorage.setItem('rqs_currentUser', JSON.stringify(updatedCurrentUser));
         
+        // Save to Supabase profiles
+        try {
+            await supabase.from('profiles').update({
+                nama: formData.nama,
+                phone: formData.phone,
+                avatar_url: finalAvatarUrl
+            }).eq('id', currentUser.id);
+        } catch(e) {
+            console.error("Gagal update profil ke supabase", e);
+        }
+        
         setIsUploading(false);
         alert("Profil berhasil diperbarui!");
         window.location.reload(); // Refresh to update currentUser globally

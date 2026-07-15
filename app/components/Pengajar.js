@@ -96,8 +96,12 @@ const Pengajar = ({ setActiveTab }) => {
                                 <div className="absolute top-2 right-2 bg-emerald-50 text-emerald-600 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                                     <PhosphorIcon icon="sign-in" size={14} weight="bold" />
                                 </div>
-                                <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 mb-2 border-2 ${p.gender === 'ustadz' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-teal-50 border-teal-100 text-teal-600'} text-xl font-bold`}>
-                                    {p.name.charAt(0).toUpperCase()}
+                                <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 mb-2 border-2 ${p.gender === 'ustadz' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-teal-50 border-teal-100 text-teal-600'} text-xl font-bold overflow-hidden`}>
+                                    {p.userId && users.find(u => u.id == p.userId)?.avatar_url ? (
+                                        <img src={users.find(u => u.id == p.userId).avatar_url} alt={p.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        p.name.charAt(0).toUpperCase()
+                                    )}
                                 </div>
                                 <h4 className="font-bold text-gray-800 text-[13px] text-center leading-tight mb-1.5">
                                     {p.gender === 'ustadz' ? 'Ust. ' : 'Usth. '}{p.name}
