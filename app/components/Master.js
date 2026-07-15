@@ -199,8 +199,16 @@ const MasterScreen = () => {
                     </div>
 
                     {/* Card 9: Setor Hafalan */}
-                    <div onClick={() => handleMenuClick('setorHafalan')} className="bg-white border border-[#E8D2A6]/60 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all">
-                        <div className="w-12 h-12 rounded-full bg-[#FCF7E8] flex items-center justify-center mb-3 text-[#B88A44]">
+                    <div onClick={() => handleMenuClick('setorHafalan')} className={`bg-white border ${stats.antreanSetoran > 0 ? 'border-amber-400 shadow-md ring-2 ring-amber-400/30 transform scale-[1.02]' : 'border-[#E8D2A6]/60 shadow-sm'} rounded-2xl p-4 flex flex-col items-center text-center hover:shadow-md hover:border-[#B88A44]/50 cursor-pointer transition-all relative`}>
+                        {stats.antreanSetoran > 0 && (
+                            <div className="absolute -top-2 -right-2 flex h-5 w-auto items-center">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full bg-red-500 text-white px-2 py-0.5 text-[9px] font-bold shadow-md">
+                                    {stats.antreanSetoran} Antrean
+                                </span>
+                            </div>
+                        )}
+                        <div className={`w-12 h-12 rounded-full ${stats.antreanSetoran > 0 ? 'bg-amber-100 animate-pulse' : 'bg-[#FCF7E8]'} flex items-center justify-center mb-3 text-[#B88A44]`}>
                             <PhosphorIcon icon="microphone-stage" size={28} />
                         </div>
                         <h4 className="text-[12px] font-bold text-[#4A1C14] mb-1">Setor Hafalan</h4>
