@@ -212,11 +212,13 @@ const KelolaPengajar = ({ onBack }) => {
                 {isModalOpen && (
                     <motion.div 
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-5 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-5 pb-24 sm:pb-5 backdrop-blur-sm"
+                        onClick={() => setIsModalOpen(false)}
                     >
                         <motion.div 
                             initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]"
+                            className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[80vh]"
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <div className="p-4 bg-white border-b border-[#E8D2A6]/30 flex items-center justify-between sticky top-0 z-10">
                                 <h3 className="text-sm font-bold text-[#4A1C14] flex items-center gap-2">
@@ -273,13 +275,12 @@ const KelolaPengajar = ({ onBack }) => {
                                         <label className="block text-[11px] font-bold text-[#4A1C14]/70 mb-2">Kelas yang Diajar</label>
                                         <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1 hide-scrollbar">
                                             {classesList.map(cls => (
-                                                <label key={cls.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${selectedClasses.includes(cls.id) ? 'bg-[#FCF7E8] border-[#B88A44] shadow-sm' : 'bg-white border-[#E8D2A6]/50 hover:bg-gray-50'}`}>
-                                                    <input type="checkbox" className="hidden" checked={selectedClasses.includes(cls.id)} onChange={() => toggleClass(cls.id)} />
+                                                <div key={cls.id} onClick={() => toggleClass(cls.id)} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${selectedClasses.includes(cls.id) ? 'bg-[#FCF7E8] border-[#B88A44] shadow-sm' : 'bg-white border-[#E8D2A6]/50 hover:bg-gray-50'}`}>
                                                     <div className={`w-5 h-5 rounded flex items-center justify-center border ${selectedClasses.includes(cls.id) ? 'bg-[#B88A44] border-[#B88A44] text-white' : 'border-gray-300'}`}>
                                                         {selectedClasses.includes(cls.id) && <PhosphorIcon icon="check" size={14} weight="bold" />}
                                                     </div>
-                                                    <span className={`text-[12px] font-bold ${selectedClasses.includes(cls.id) ? 'text-[#4A1C14]' : 'text-[#4A1C14]/70'}`}>{cls.name}</span>
-                                                </label>
+                                                    <span className={`text-[11px] font-bold ${selectedClasses.includes(cls.id) ? 'text-[#4A1C14]' : 'text-[#4A1C14]/70'}`}>{cls.name}</span>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>

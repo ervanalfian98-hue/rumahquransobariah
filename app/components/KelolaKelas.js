@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import PhosphorIcon from './PhosphorIcon';
 import { CLASSES as INITIAL_CLASSES } from './MockData';
 
@@ -73,6 +73,12 @@ const KelolaKelas = ({ onBack }) => {
         window.dispatchEvent(new Event('rqs-classes-updated'));
     };
 
+    const handleReorder = (newOrder) => {
+        setClasses(newOrder);
+        localStorage.setItem('rqs_classes', JSON.stringify(newOrder));
+        window.dispatchEvent(new Event('rqs-classes-updated'));
+    };
+
     const handleEdit = (cls) => {
         setEditingId(cls.id);
         setName(cls.name);
@@ -113,11 +119,14 @@ const KelolaKelas = ({ onBack }) => {
             </div>
 
             <div className="p-5">
-                <div className="space-y-4">
+                <Reorder.Group axis="y" values={classes} onReorder={handleReorder} className="space-y-4">
                     {classes.map(cls => (
-                        <div key={cls.id} className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8D2A6]/50 relative overflow-hidden">
+                        <Reorder.Item key={cls.id} value={cls} className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8D2A6]/50 relative overflow-hidden cursor-grab active:cursor-grabbing">
                             <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-3">
+                                    <div className="text-gray-300">
+                                        <PhosphorIcon icon="dots-six-vertical" size={24} weight="bold" />
+                                    </div>
                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${cls.color.split(' ')[0]} ${cls.color.split(' ')[1]}`}>
                                         <PhosphorIcon icon="book-open" size={24} weight="duotone" />
                                     </div>
@@ -130,7 +139,7 @@ const KelolaKelas = ({ onBack }) => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 relative z-10">
+                                <div className="flex gap-2 relative z-10" onPointerDown={(e) => e.stopPropagation()}>
                                     <button onClick={() => handleEdit(cls)} className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100">
                                         <PhosphorIcon icon="pencil-simple" size={16} />
                                     </button>
@@ -139,8 +148,8 @@ const KelolaKelas = ({ onBack }) => {
                                     </button>
                                 </div>
                             </div>
-                            <p className="text-[11px] text-[#4A1C14]/70 mt-2">{cls.desc}</p>
-                        </div>
+                            <p className="text-[11px] text-[#4A1C14]/70 mt-2 pl-9">{cls.desc}</p>
+                        </Reorder.Item>
                     ))}
                     
                     {classes.length === 0 && (
@@ -149,7 +158,7 @@ const KelolaKelas = ({ onBack }) => {
                             <p className="text-[12px] text-[#4A1C14]/60">Belum ada kelas. Silakan tambahkan kelas baru.</p>
                         </div>
                     )}
-                </div>
+                </Reorder.Group>
             </div>
 
             {/* Modal Form */}
@@ -160,12 +169,14 @@ const KelolaKelas = ({ onBack }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"
+                        onClick={() => setIsModalOpen(false)}
                     >
                         <motion.div 
                             initial={{ scale: 0.95, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.95, y: 20 }}
                             className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex justify-between items-center mb-5 shrink-0">
                                 <h3 className="text-lg font-bold text-[#4A1C14]">
