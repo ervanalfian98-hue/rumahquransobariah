@@ -142,16 +142,6 @@ const PendidikanScreen = ({ currentUser }) => {
 
                     if (currentTotalMinutes >= endMin) {
                         newProgressMap[cls.id] = 0; // Class ended, reset to 0
-                        // Class has ended, clear attendance for this class
-                        if (currentAbsen) {
-                            Object.keys(currentAbsen).forEach(userId => {
-                                const userAbsen = currentAbsen[userId];
-                                if (Array.isArray(userAbsen) && userAbsen.includes(cls.id)) {
-                                    currentAbsen[userId] = userAbsen.filter(id => id !== cls.id);
-                                    absenChanged = true;
-                                }
-                            });
-                        }
                     } else {
                         const teacherArrivedStr = teacherPresentRecord[cls.id];
                         if (teacherArrivedStr) {
